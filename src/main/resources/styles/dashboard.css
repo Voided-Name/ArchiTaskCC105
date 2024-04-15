@@ -1,0 +1,45 @@
+/*
+ * Empty Stylesheet file.
+ */
+
+.mainFxmlClass {}
+
+.tree-view {
+    -fx-border-color: #0A2342;
+    -fx-padding: 0px;
+}
+
+.tree-view .tree-cell {
+    -fx-border-color: transparent transparent #0A2342 transparent;
+    -fx-padding: 10px;
+}
+
+.tree-view:focused {
+    -fx-focus-color: #0A2342;
+    -fx-faint-focus-color: transparent;
+}
+
+.tree-view .scroll-bar {
+    -fx-pref-width: 0;
+    -fx-opacity: 0;
+    -fx-background-color: transparent;
+}
+
+.tree-view .scroll-bar .thumb {
+    -fx-background-color: transparent;
+    /* Semi-transparent white thumb */
+}
+
+.tree-view .scroll-bar .track {
+    -fx-background-color: transparent;
+}
+
+.tree-view .scroll-bar .increment-button,
+.tree-view .scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+.tree-cell:selected {
+    -fx-background-color: #0A2342;
+    -fx-text-fill: white;
+}

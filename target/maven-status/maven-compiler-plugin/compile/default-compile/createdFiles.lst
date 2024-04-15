@@ -1,0 +1,6 @@
+com\mycompany\architask\PrimaryController.class
+module-info.class
+com\mycompany\architask\App.class
+com\mycompany\architask\DashboardController.class
+com\mycompany\architask\SecondaryController.class
+com\mycompany\architask\projectTemplateFX.class
