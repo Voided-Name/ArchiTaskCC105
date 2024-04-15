@@ -3,8 +3,11 @@
 <?import java.net.URL?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TreeView?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -13,7 +16,7 @@
 <?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
 
-<AnchorPane fx:id="mainAnchorPane" id="AnchorPane" prefHeight="400.0" prefWidth="600.0" style="-fx-background-color: white;" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.architask.DashboardController">
+<AnchorPane id="AnchorPane" fx:id="mainAnchorPane" prefHeight="471.0" prefWidth="600.0" style="-fx-background-color: white;" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.architask.DashboardController">
     <stylesheets>
         <URL value="@/styles/dashboard.css" />
     </stylesheets>
@@ -50,6 +53,18 @@
                         <Font size="35.0" />
                      </font>
                   </Text>
+                  <TableView fx:id="deliverTable" prefHeight="200.0" prefWidth="200.0">
+                     <placeholder>
+                        <Label text = ""/>
+                     </placeholder>
+                    <columns>
+                     <TableColumn fx:id="deliverCol" prefWidth="68.79998779296875" text="Deliverable" />
+                     <TableColumn fx:id="deliverStatusCol" prefWidth="75.0" text="Status" />
+                     <TableColumn fx:id="deliverDueCol" prefWidth="81.60004252195358" text="Due Date" />
+                     <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" text="Lead" />
+                     <TableColumn fx:id="deliverArchsCol" prefWidth="75.0" text="Architects" />
+                    </columns>
+                  </TableView>
                </children>
             </VBox>
          </content>

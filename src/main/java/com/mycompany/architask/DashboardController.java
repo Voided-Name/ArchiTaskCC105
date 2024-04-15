@@ -22,7 +22,8 @@ import javafx.scene.layout.VBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
-import javafx.beans.binding.Bindings;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.TextInputDialog;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -60,6 +61,18 @@ public class DashboardController implements Initializable {
     VBox mainVBox;
     @FXML
     AnchorPane mainAnchorPane;
+    @FXML
+    TableView<String> deliverTable;
+    @FXML
+    TableColumn<String, String> deliverCol;
+    @FXML
+    TableColumn<String, String> deliverStatusCol;
+    @FXML
+    TableColumn<String, String> deliverDueCol;
+    @FXML
+    TableColumn<String, String> deliverLeadCol;
+    @FXML
+    TableColumn<String, String> deliverArchsCol;
 
     /**
      * Initializes the controller class.
@@ -68,8 +81,24 @@ public class DashboardController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         uiSetup();
     }
+    // <TableView fx:id="deliverTable" prefHeight="200.0" prefWidth="200.0">
+    // <columns>
+    // <TableColumn fx:id="deliverCol" prefWidth="68.79998779296875"
+    // text="Deliverable" />
+    // <TableColumn fx:id="deliverStatusCol" prefWidth="75.0" text="Status" />
+    // <TableColumn fx:id="deliverDueCol" prefWidth="81.60004252195358" text="Due
+    // Date" />
+    // <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" text="Lead" />
+    // <TableColumn fx:id="deliverArchsCol" prefWidth="75.0" text="Architects" />
+    // </columns>
+    // </TableView>
 
     private void uiSetup() {
+        deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
+        deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
+        deliverArchsCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
+        deliverLeadCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
+        deliverDueCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
         mainAnchorPane.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.S && event.isControlDown()) {
                 Alert confirmSave = new Alert(AlertType.CONFIRMATION, "Save Changes?");
@@ -392,6 +421,7 @@ public class DashboardController implements Initializable {
 
             projectDetailsArea.setText(projectDetails.getText());
             projectDetailsArea.setMinHeight(layoutHeight + 20);
+            projectDetailsArea.setMaxHeight(layoutHeight + 20);
             System.out.println("Project Details: " + projectDetails.getLayoutBounds().getHeight());
             System.out.println("Project Area: " + projectDetailsArea.getHeight());
             projectDetailsArea.requestFocus();
