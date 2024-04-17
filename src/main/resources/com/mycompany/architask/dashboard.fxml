@@ -2,12 +2,12 @@
 
 <?import java.net.URL?>
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TreeView?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -28,6 +28,11 @@
             <ImageView fitHeight="56.0" fitWidth="30.0" onMouseClicked="#projectAdd" onMouseEntered="#cursorHand" onMouseExited="#cursorDefault" pickOnBounds="true" preserveRatio="true">
                <image>
                   <Image url="@../../../img/newProject.png" />
+               </image>
+            </ImageView>
+            <ImageView fitHeight="56.0" fitWidth="30.0" onMouseClicked="#btnDelete" onMouseEntered="#cursorHand" onMouseExited="#cursorDefault" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../../img/deleteIcon.png" />
                </image>
             </ImageView>
          </children>
@@ -55,14 +60,13 @@
                   </Text>
                   <TableView fx:id="deliverTable" prefHeight="200.0" prefWidth="200.0">
                      <placeholder>
-                        <Label text = ""/>
+                        <Label text="" />
                      </placeholder>
                     <columns>
                      <TableColumn fx:id="deliverCol" prefWidth="68.79998779296875" text="Deliverable" />
                      <TableColumn fx:id="deliverStatusCol" prefWidth="75.0" text="Status" />
                      <TableColumn fx:id="deliverDueCol" prefWidth="81.60004252195358" text="Due Date" />
                      <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" text="Lead" />
-                     <TableColumn fx:id="deliverArchsCol" prefWidth="75.0" text="Architects" />
                     </columns>
                   </TableView>
                </children>

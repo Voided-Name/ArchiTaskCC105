@@ -163,7 +163,7 @@ public class App extends Application {
     static ResultSet getDeliverables() {
         ResultSet rs = null;
         if (userTypeNow == 0) {
-            String query = "SELECT projectId, deliverableTitle, deliverableDetails FROM tbldeliverables ORDER BY projectId";
+            String query = "SELECT projectId, deliverableId, deliverableTitle, deliverableDetails, deliverableStatus, deliverableLead, deliverableDue FROM tbldeliverables ORDER BY projectId";
             try {
                 PreparedStatement stmt = conn.prepareStatement(query);
                 rs = stmt.executeQuery();
@@ -264,6 +264,25 @@ public class App extends Application {
         }
 
         return exists;
+    }
+
+    static int getNextProjectId() {
+        openConnection();
+        String query = "SELECT MAX(projectId) from project";
+        int nextId = 0;
+
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            if (rs.isBeforeFirst()) {
+                rs.next();
+                nextId = rs.getInt("projectId");
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+        return nextId + 1;
     }
 
     static boolean checkExistEmail(String email) {

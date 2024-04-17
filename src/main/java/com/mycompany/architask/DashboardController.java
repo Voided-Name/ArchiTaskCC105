@@ -14,6 +14,8 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.text.TextBoundsType;
 import javafx.scene.control.ButtonType;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.KeyCode;
@@ -25,6 +27,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TextInputDialog;
+import javafx.beans.property.SimpleStringProperty;
 import java.util.ArrayList;
 import java.util.Optional;
 
@@ -43,8 +46,17 @@ public class DashboardController implements Initializable {
     static ArrayList<String> projectDetailsArr = new ArrayList<String>();
     static ArrayList<String> projectImageArr = new ArrayList<String>();
     static ArrayList<Integer> deliverableProjectIdArr = new ArrayList<Integer>();
-    static ArrayList<String> deliverableDetailsArr = new ArrayList<String>();
+    static ArrayList<Integer> deliverableIdArr = new ArrayList<Integer>();
     static ArrayList<String> deliverableTitleArr = new ArrayList<String>();
+    static ArrayList<String> deliverableDetailsArr = new ArrayList<String>();
+    static ArrayList<String> deliverableStatusArr = new ArrayList<String>();
+    static ArrayList<String> deliverableLeadArr = new ArrayList<String>();
+    static ArrayList<java.sql.Date> deliverableDueArr = new ArrayList<java.sql.Date>();
+    static ArrayList<String> deliverableArchsArr = new ArrayList<String>();
+    static ArrayList<Integer> newProjectIds = new ArrayList<Integer>();
+    static ObservableList<String[]> data = FXCollections.observableArrayList();
+    static boolean gotNextId = false;
+    static int nextProjectId = 0;
 
     // FXML IDs
     @FXML
@@ -62,17 +74,15 @@ public class DashboardController implements Initializable {
     @FXML
     AnchorPane mainAnchorPane;
     @FXML
-    TableView<String> deliverTable;
+    TableView<String[]> deliverTable;
     @FXML
-    TableColumn<String, String> deliverCol;
+    TableColumn<String[], String> deliverCol;
     @FXML
-    TableColumn<String, String> deliverStatusCol;
+    TableColumn<String[], String> deliverStatusCol;
     @FXML
-    TableColumn<String, String> deliverDueCol;
+    TableColumn<String[], String> deliverDueCol;
     @FXML
-    TableColumn<String, String> deliverLeadCol;
-    @FXML
-    TableColumn<String, String> deliverArchsCol;
+    TableColumn<String[], String> deliverLeadCol;
 
     /**
      * Initializes the controller class.
@@ -81,24 +91,20 @@ public class DashboardController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         uiSetup();
     }
-    // <TableView fx:id="deliverTable" prefHeight="200.0" prefWidth="200.0">
-    // <columns>
-    // <TableColumn fx:id="deliverCol" prefWidth="68.79998779296875"
-    // text="Deliverable" />
-    // <TableColumn fx:id="deliverStatusCol" prefWidth="75.0" text="Status" />
-    // <TableColumn fx:id="deliverDueCol" prefWidth="81.60004252195358" text="Due
-    // Date" />
-    // <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" text="Lead" />
-    // <TableColumn fx:id="deliverArchsCol" prefWidth="75.0" text="Architects" />
-    // </columns>
-    // </TableView>
 
     private void uiSetup() {
-        deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
-        deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
-        deliverArchsCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
-        deliverLeadCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
-        deliverDueCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(5));
+        // Table
+        deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
+        deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
+        deliverLeadCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
+        deliverDueCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
+        deliverCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()[0]));
+        deliverStatusCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()[1]));
+        deliverDueCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()[2]));
+        deliverLeadCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()[3]));
+        deliverTable.setItems(data);
+
+        // CTRL + S to Save Changes
         mainAnchorPane.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.S && event.isControlDown()) {
                 Alert confirmSave = new Alert(AlertType.CONFIRMATION, "Save Changes?");
@@ -111,6 +117,8 @@ public class DashboardController implements Initializable {
 
             }
         });
+
+        // ProjectList and ProjectDetails UI Setup
         projectList.setShowRoot(false);
         projectList.setRoot(projectListRoot);
         projectTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
@@ -147,8 +155,11 @@ public class DashboardController implements Initializable {
 
     private void setupProjectTreeView() {
         ResultSet rs = App.getProjects();
-        int projectId, deliverableProjectId;
-        String projectTitle, projectDetails, projectImage, deliverableTitle, deliverableDetails;
+        int projectId, deliverableProjectId, deliverableId;
+        String projectTitle, projectDetails, projectImage, deliverableTitle, deliverableDetails, deliverableStatus,
+                deliverableLead;
+        String[] rowBuffer;
+        java.sql.Date deliverableDue;
 
         try {
             while (rs.next()) {
@@ -182,11 +193,20 @@ public class DashboardController implements Initializable {
 
             while (rs.next()) {
                 deliverableProjectId = rs.getInt("projectId");
+                deliverableId = rs.getInt("deliverableId");
                 deliverableTitle = rs.getString("deliverableTitle");
                 deliverableDetails = rs.getString("deliverableDetails");
+                deliverableStatus = rs.getString("deliverableStatus");
+                deliverableLead = rs.getString("deliverableLead");
+                deliverableDue = rs.getDate("deliverableDue");
+
                 deliverableProjectIdArr.add(deliverableProjectId);
+                deliverableIdArr.add(deliverableId);
                 deliverableTitleArr.add(deliverableTitle);
                 deliverableDetailsArr.add(deliverableDetails);
+                deliverableStatusArr.add(deliverableStatus);
+                deliverableLeadArr.add(deliverableLead);
+                deliverableDueArr.add(deliverableDue);
                 System.out.println("Deliverable Title: " + deliverableTitle);
             }
         } catch (SQLException err) {
@@ -210,13 +230,13 @@ public class DashboardController implements Initializable {
                 currentProjectId = deliverableProjectIdArr.get(x);
             }
         }
+
         for (TreeItem<String> projectLeaf : projectLeafsBuffer) {
             projectBranches.get(projectIdArr.indexOf(currentProjectId)).getChildren().add(projectLeaf);
         }
 
         projectList.getSelectionModel().selectFirst();
         selectProject();
-
     }
 
     @FXML
@@ -254,6 +274,18 @@ public class DashboardController implements Initializable {
             }
         }
         projectListRoot.getChildren().add(new TreeItem<String>(projectName));
+
+        if (!gotNextId) {
+            nextProjectId = App.getNextProjectId();
+            newProjectIds.add(nextProjectId);
+            projectIdArr.add(nextProjectId++);
+            projectTitleArr.add(projectName);
+            projectDetailsArr.add("Double Click to Edit and Escape to Quit Editing");
+            projectImageArr.add("empty");
+            gotNextId = true;
+        } else {
+            projectIdArr.add(nextProjectId++);
+        }
     }
 
     private void changeProjectName(String projectName) {
@@ -305,6 +337,30 @@ public class DashboardController implements Initializable {
         projectTitle.setText(projectList.getSelectionModel().getSelectedItem().getValue());
     }
 
+    private ArrayList<ArrayList<String>> getDeliverablesUnderProject(int indexProject) {
+        ArrayList<ArrayList<String>> deliverUnderProject = new ArrayList<ArrayList<String>>();
+        int projectId = projectIdArr.get(indexProject);
+
+        int index = 0;
+        for (int x = 0; x < deliverableIdArr.size(); x++) {
+            if (deliverableProjectIdArr.get(x) == projectId) {
+                ArrayList<String> buffer = new ArrayList<String>();
+                buffer.add(deliverableTitleArr.get(x));
+                buffer.add(deliverableStatusArr.get(x));
+                buffer.add(deliverableDueArr.get(x).toString());
+                buffer.add(deliverableLeadArr.get(x));
+                buffer.add("");
+                deliverUnderProject.add(buffer);
+                index++;
+            }
+        }
+
+        for (ArrayList<String> deliverable : deliverUnderProject) {
+            System.out.println(deliverable.toString());
+        }
+        return deliverUnderProject;
+    }
+
     @FXML
     private void selectProject() {
         int[] indexes = getSelectedIndex();
@@ -313,8 +369,16 @@ public class DashboardController implements Initializable {
         int selectedIndex = indexes[1];
 
         if (selectedIndexParent == -1) {
+            ArrayList<ArrayList<String>> deliverUnderProject = getDeliverablesUnderProject(selectedIndex);
+            String[][] buffer;
             projectTitle.setText(selected.getValue());
             projectDetails.setText(projectDetailsArr.get(selectedIndex));
+            data.clear();
+
+            for (int x = 0; x < deliverUnderProject.size(); x++) {
+                data.add(deliverUnderProject.get(x).toArray(new String[0]));
+            }
+
         } else {
             projectTitle.setText(selected.getValue());
             projectDetails.setText(getSelectedDeliverableDetails(selectedIndex, selectedIndexParent));
