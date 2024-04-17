@@ -30,6 +30,11 @@
                   <Image url="@../../../img/newProject.png" />
                </image>
             </ImageView>
+            <ImageView fitHeight="56.0" fitWidth="30.0" onMouseClicked="#btnDelete" onMouseEntered="#cursorHand" onMouseExited="#cursorDefault" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../../../img/deleteIcon.png" />
+               </image>
+            </ImageView>
          </children>
          <padding>
             <Insets left="10.0" />

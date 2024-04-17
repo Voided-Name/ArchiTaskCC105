@@ -261,6 +261,19 @@ public class DashboardController implements Initializable {
         result.ifPresent(inpt -> addProject(inpt));
     }
 
+    @FXML
+    private void btnDelete() {
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        int[] indexes = getSelectedIndex();
+        if (indexes[0] == -1) {
+            projectIdArr.remove(indexes[1]);
+            projectTitleArr.remove(indexes[1]);
+            projectDetailsArr.remove(indexes[1]);
+            projectImageArr.remove(indexes[1]);
+            projectListRoot.getChildren().remove(selected);
+        }
+    }
+
     private void addProject(String projectName) {
         for (TreeItem<String> project : projectListRoot.getChildren()) {
             String projectStr = project.getValue();
