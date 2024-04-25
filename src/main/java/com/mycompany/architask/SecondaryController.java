@@ -59,5 +59,4 @@ public class SecondaryController {
             loginWarn.setText("Invalid Username/Password!");
         }
     }
-
 }

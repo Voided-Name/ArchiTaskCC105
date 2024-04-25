@@ -1,6 +1,7 @@
 package com.mycompany.architask;
 
 import javafx.application.Application;
+import java.util.Vector;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -14,7 +15,6 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.Cursor;
 import java.util.ArrayList;
 import org.mindrot.jbcrypt.BCrypt;
-
 import java.io.IOException;
 
 /**
@@ -24,16 +24,17 @@ public class App extends Application {
 
     private static Scene scene;
     private static Connection conn;
-    private static String userNow;
-    private static int userTypeNow;
-    private static int userId;
+    private static String userNow = "NaeBerber";
+    private static int userTypeNow = 0;
+    private static int userId = 1;
 
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("login"), 600, 400);
+        scene = new Scene(loadFXML("dashboard"), 600, 400);
         stage.setScene(scene);
         stage.show();
-        stage.setResizable(false);
+        stage.setResizable(true);
+        stage.setMaximized(false);
     }
 
     public static void saveToSQL(ArrayList<Integer> projectIdArr, ArrayList<String> projectTitleArr,
@@ -82,8 +83,363 @@ public class App extends Application {
         scene.setCursor(Cursor.HAND);
     }
 
+    public static Vector<ArrayList<Object>> getArchNames() {
+        // TODO check access to project first
+        Vector<ArrayList<Object>> archNames = new Vector<>();
+        openConnection();
+        try {
+            String query = "SELECT id, fname, lname, username FROM tbluseraccount";
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+
+            while (rs.next()) {
+                ArrayList<Object> buffer = new ArrayList<>();
+                buffer.add(rs.getInt("id"));
+                buffer.add(rs.getString("fname"));
+                buffer.add(rs.getString("lname"));
+                buffer.add(rs.getString("username"));
+
+                archNames.add(buffer);
+            }
+            closeConnection();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        return archNames;
+    }
+
+    public static void updateDelDue(java.sql.Date due, int delId) {
+        openConnection();
+        String query = "UPDATE tbldeliverables SET deliverableDue = ? WHERE deliverableId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setDate(1, due);
+            pst.setInt(2, delId);
+            int x = pst.executeUpdate();
+            System.out.println("Num of affected rows: " + x + " delId: " + delId);
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void updateDelLead(int leadId, int delId) {
+        openConnection();
+        String query = "UPDATE tbldeliverables SET deliverableLead = ? WHERE deliverableId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, leadId);
+            pst.setInt(2, delId);
+            int x = pst.executeUpdate();
+            System.out.println("Num of affected rows: " + x + " delId: " + delId);
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void archiveProject(int projectId) {
+        openConnection();
+        try {
+            System.out.println("Archive Project id : " + projectId);
+            ArrayList<Integer> deliverableIds = new ArrayList<>();
+            String query = "SELECT deliverableId FROM tbldeliverables WHERE projectid = ?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, projectId);
+            ResultSet rsSelect = pst.executeQuery();
+
+            while (rsSelect.next()) {
+                archiveDeliverable(rsSelect.getInt("deliverableId"));
+            }
+
+            if (conn.isClosed()) {
+                openConnection();
+            }
+
+            query = "SELECT * FROM tblprojectinfo WHERE projectid = ?";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, projectId);
+            rsSelect = pst.executeQuery();
+            rsSelect.next();
+            String projectTitle = rsSelect.getString("projectTitle");
+            String projectDetails = rsSelect.getString("projectDetails");
+            String projectImage = rsSelect.getString("projectImage");
+
+            query = "DELETE FROM tblprojectinfo WHERE projectid = ?";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, projectId);
+            pst.executeUpdate();
+
+            query = "INSERT INTO tblprojectinfoarchive (projectid, projecttitle, projectdetails, projectimage) VALUES (?, ?, ?, ?)";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, projectId);
+            pst.setString(2, projectTitle);
+            pst.setString(3, projectDetails);
+            pst.setString(4, projectImage);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static String getLead(int projectLeadId) {
+        if (projectLeadId == 0) {
+            return "";
+        }
+
+        String lname = "";
+        String fname = "";
+        String lead = "";
+
+        openConnection();
+        try {
+            String query = "SELECT lname, fname FROM tbluseraccount WHERE id = ?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, projectLeadId);
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+            lname = rs.getString("lname");
+            fname = rs.getString("fname");
+            lead = lname + ", " + fname;
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+
+        return lead;
+    }
+
     public static void cursorDefault() {
         scene.setCursor(Cursor.DEFAULT);
+    }
+
+    public static int addTask(int deliverableId, String taskName) {
+        int taskId = 0;
+        openConnection();
+        String query = "INSERT INTO tbltasks (deliverableId, taskTitle, taskDetails, status, taskDue) VALUES (?,?,'Double Click to Edit', 'TODO', NOW())";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, deliverableId);
+            pst.setString(2, taskName);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        query = "SELECT MAX(taskId) AS maxid FROM tbltasks";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+            taskId = rs.getInt("maxid");
+
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+        return taskId;
+    }
+
+    public static int addDeliverable(int projectId, String deliverableName) {
+        int deliverId = 0;
+        openConnection();
+        String query = "INSERT INTO tbldeliverables (projectid, deliverabletitle, deliverableDetails,deliverableStatus, deliverableDue, deliverablelead) VALUES (?,?,'Double Click to Edit', 'TODO', NOW(), 0)";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, projectId);
+            pst.setString(2, deliverableName);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        query = "SELECT MAX(deliverableid) AS maxid FROM tbldeliverables";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+            deliverId = rs.getInt("maxid");
+
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+        return deliverId;
+    }
+
+    public static int newProject(String projectName) {
+        openConnection();
+        int newId = 0;
+
+        String query = "INSERT INTO tblprojectinfo (projectTitle, projectDetails, projectImage) VALUES (?, 'Double Click to Edit', '')";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, projectName);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        query = "SELECT MAX(projectId) as maxid FROM tblprojectinfo";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+            newId = rs.getInt("maxid");
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        closeConnection();
+        return newId;
+    }
+
+    public static void archiveTask(int id) {
+        openConnection();
+        try {
+            String query = "SELECT * FROM tbltasks WHERE taskId = ?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, id);
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+
+            int taskId = rs.getInt("taskId");
+            int taskDeliverableId = rs.getInt("deliverableId");
+            String taskTitle = rs.getString("taskTitle");
+            String taskDetails = rs.getString("taskDetails");
+            String taskStatus = rs.getString("status");
+            java.sql.Date taskDue = rs.getDate("taskDue");
+
+            query = "DELETE FROM tbltasks WHERE taskId = ?";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, id);
+            pst.executeUpdate();
+
+            query = "INSERT INTO tbltasksarchive (taskId, deliverableId, taskTitle, taskDetails, status, taskDue ) VALUES (?, ?, ?, ?, ?, ?)";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, taskId);
+            pst.setInt(2, taskDeliverableId);
+            pst.setString(3, taskTitle);
+            pst.setString(4, taskDetails);
+            pst.setString(5, taskStatus);
+            pst.setDate(6, taskDue);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void archiveDeliverable(int id) {
+        openConnection();
+        try {
+            String query = "SELECT taskId FROM tbltasks WHERE deliverableId = ?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, id);
+            ResultSet rsSelect = pst.executeQuery();
+
+            while (rsSelect.next()) {
+                archiveTask(rsSelect.getInt("taskId"));
+            }
+
+            if (conn.isClosed()) {
+                openConnection();
+            }
+
+            System.out.println("Id sent from dashboard: " + id);
+            query = "SELECT * FROM tbldeliverables WHERE deliverableId = ?";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, id);
+            ResultSet rs = pst.executeQuery();
+            rs.next();
+
+            int deliverableId = rs.getInt("deliverableId");
+            String deliverableTitle = rs.getString("deliverableTitle");
+            String deliverableStatus = rs.getString("deliverableStatus");
+            int deliverableProjectId = rs.getInt("projectId");
+            String deliverableDetails = rs.getString("deliverableDetails");
+            int deliverableLead = rs.getInt("deliverableLead");
+            java.sql.Date deliverableDue = rs.getDate("deliverableDue");
+
+            query = "DELETE FROM tbldeliverables WHERE deliverableId = ?";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, id);
+            pst.executeUpdate();
+
+            query = "INSERT INTO tbldeliverablesarchive (deliverableId, projectId, deliverableTitle, deliverableDetails, deliverableStatus, deliverableLead, deliverableDue) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            pst = conn.prepareStatement(query);
+            pst.setInt(1, deliverableId);
+            pst.setInt(2, deliverableProjectId);
+            pst.setString(3, deliverableTitle);
+            pst.setString(4, deliverableDetails);
+            pst.setString(5, deliverableStatus);
+            pst.setInt(6, deliverableLead);
+            pst.setDate(7, deliverableDue);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void editProjectTitle(int projectId, String projectName) {
+        openConnection();
+        String query = "Update tblprojectinfo SET projectTitle = ? WHERE projectId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, projectName);
+            pst.setInt(2, projectId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void editDeliverableDetails(int deliverableId, String deliverableDetail) {
+        openConnection();
+        System.out.println(deliverableId);
+        System.out.println(deliverableDetail);
+        String query = "UPDATE tbldeliverables SET deliverableDetails = ? WHERE deliverableId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, deliverableDetail);
+            pst.setInt(2, deliverableId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void editDeliverableTitle(int deliverableId, String deliverableName) {
+        openConnection();
+        System.out.println(deliverableId);
+        System.out.println(deliverableName);
+        String query = "UPDATE tbldeliverables SET deliverableTitle = ? WHERE deliverableId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, deliverableName);
+            pst.setInt(2, deliverableId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void editProjectDetails(int projectId, String projectDetails) {
+        openConnection();
+        System.out.println("Project id: " + projectId);
+        String query = "Update tblprojectinfo SET projectDetails = ? WHERE projectId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, projectDetails);
+            pst.setInt(2, projectId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
     }
 
     // scene functions
@@ -135,6 +491,7 @@ public class App extends Application {
 
     // queries
     static ResultSet getProjects() {
+        openConnection();
         ResultSet rs = null;
         if (userTypeNow == 0) {
             String query = "SELECT projectId, projectTitle, projectDetails, projectImage FROM tblprojectinfo";
@@ -142,6 +499,10 @@ public class App extends Application {
             try {
                 PreparedStatement stmt = conn.prepareStatement(query);
                 rs = stmt.executeQuery();
+                if (rs.isBeforeFirst()) {
+                    System.out.println("non empty result set\n\n\n");
+                }
+
             } catch (SQLException err) {
                 err.printStackTrace();
             }
@@ -180,6 +541,20 @@ public class App extends Application {
             } catch (SQLException err) {
                 err.printStackTrace();
             }
+        }
+
+        return rs;
+    }
+
+    static ResultSet getTasks() {
+        openConnection();
+        ResultSet rs = null;
+        String query = "SELECT taskId, deliverableId, taskTitle, taskDetails, status, taskDue FROM tbltasks ORDER BY deliverableId";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(query);
+            rs = stmt.executeQuery();
+        } catch (SQLException err) {
+            err.printStackTrace();
         }
 
         return rs;

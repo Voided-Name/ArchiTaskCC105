@@ -39,6 +39,10 @@
     -fx-background-color: transparent;
 }
 
+.project {
+    -fx-font-weight: 700;
+}
+
 .tree-cell:selected {
     -fx-background-color: #0A2342;
     -fx-text-fill: white;

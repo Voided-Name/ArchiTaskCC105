@@ -7,5 +7,6 @@ module com.mycompany.architask {
     requires java.base;
 
     opens com.mycompany.architask to javafx.fxml;
+
     exports com.mycompany.architask;
 }
