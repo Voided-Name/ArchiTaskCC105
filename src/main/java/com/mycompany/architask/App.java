@@ -151,6 +151,20 @@ public class App extends Application {
         closeConnection();
     }
 
+    public static void updateTaskDue(java.sql.Date taskDue, int taskId) {
+        openConnection();
+        String query = "UPDATE tbltasks SET taskDue = ? WHERE taskId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setDate(1, taskDue);
+            pst.setInt(2, taskId);
+            int x = pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
     public static void updateDelLead(int leadId, int delId) {
         openConnection();
         String query = "UPDATE tbldeliverables SET deliverableLead = ? WHERE deliverableId = ?";

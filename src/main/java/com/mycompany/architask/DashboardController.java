@@ -170,7 +170,7 @@ public class DashboardController implements Initializable {
         // ProjectList and ProjectDetails UI Setup
         projectList.setShowRoot(false);
         projectList.setRoot(projectListRoot);
-        colorFolding();
+        // colorFolding();
 
         projectTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
         taskTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
@@ -442,42 +442,34 @@ public class DashboardController implements Initializable {
     }
 
     // not yet fully functional
-    private void colorFolding() {
-        projectList.setCellFactory(new Callback<TreeView<String>, TreeCell<String>>() {
-            @Override
-            public TreeCell<String> call(TreeView<String> param) {
-                TreeCell<String> treeCell = new TreeCell<String>() {
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
-                            setText(null);
-                            setStyle("");
-                        } else {
-                            setText(item);
-                            TreeItem<String> currentItem = getTreeItem();
-                            int depth = getDepth(currentItem) - 1;
-                            switch (depth) {
-                                case 0:
-                                    getStyleClass().add("project");
-                            }
-                        }
-                    }
-
-                    private int getDepth(TreeItem<String> item) {
-                        int depth = 0;
-                        while (item != null && item.getParent() != null) {
-                            depth++;
-                            item = item.getParent();
-                        }
-                        return depth;
-                    }
-                };
-                treeCell.prefWidthProperty().bind(projectList.widthProperty().subtract(5));
-                treeCell.setWrapText(true);
-                return treeCell;
-            }
-        });
-    }
+    // private void colorFolding() {
+    // projectList.setCellFactory(tv -> new TreeCell<String>() {
+    // private Text text;
+    //
+    // @Override
+    // protected void updateItem(String item, boolean empty) {
+    // super.updateItem(item, empty);
+    // if (empty || item == null) {
+    // setText(null);
+    // setStyle("");
+    // } else {
+    // setText(item);
+    // TreeItem<String> currentItem = getTreeItem();
+    //
+    // if (currentItem.getParent() == projectListRoot) {
+    // setStyle("-fx-font-weight: bold");
+    // }
+    // if (text == null) {
+    // text = new Text();
+    // }
+    // text.setText(item);
+    // text.wrappingWidthProperty().bind(projectList.widthProperty().subtract(5));
+    // setGraphic(text);
+    // }
+    // }
+    // });
+    // }
+    //
 
     private void setupProjectTreeView() {
         ResultSet rs = App.getProjects();
@@ -1116,10 +1108,10 @@ public class DashboardController implements Initializable {
         return "cancel";
     }
 
-    private Optional<LocalDate> getDate() {
+    private Optional<LocalDate> getDate(java.sql.Date currentDate) {
         Dialog<LocalDate> dialogDelDate = new Dialog<>();
         DatePicker datepicker = new DatePicker();
-        datepicker.setValue((deliverableDueArr.get(delIndexParallel)).toLocalDate());
+        datepicker.setValue(currentDate.toLocalDate());
 
         dialogDelDate.getDialogPane().setContent(datepicker);
         dialogDelDate.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -1154,16 +1146,18 @@ public class DashboardController implements Initializable {
 
     @FXML
     public void editTaskDue() {
-        int[] indexes = getSelectedIndex();
-        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+        int taskIndexPar = taskIdArr.indexOf(taskId);
 
-        Optional<LocalDate> result = getDate();
+        Optional<LocalDate> result = getDate(taskDueArr.get(taskIndexPar));
 
         if (result.isPresent()) {
             java.sql.Date date = java.sql.Date.valueOf(result.get());
-            deliverableDueArr.set(delIndexParallel, date);
-            lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
-            App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
+            taskDueArr.set(taskIndexPar, date);
+            lblTaskDue.setText(dateToString(taskDueArr.get(taskIndexPar)));
+            App.updateTaskDue(date, taskIndexPar);
+            refreshTable();
         }
     }
 
@@ -1186,7 +1180,7 @@ public class DashboardController implements Initializable {
         int[] indexes = getSelectedIndex();
         int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
 
-        Optional<LocalDate> result = getDate();
+        Optional<LocalDate> result = getDate(deliverableDueArr.get(delIndexParallel));
 
         if (result.isPresent()) {
             java.sql.Date date = java.sql.Date.valueOf(result.get());
@@ -1204,6 +1198,7 @@ public class DashboardController implements Initializable {
         taskTitle.setText(taskTitleArr.get(taskIndexPar));
         taskDetails.setText(taskDetailsArr.get(taskIndexPar));
         lblTaskStatus.setText(taskStatusArr.get(taskIndexPar));
+        lblTaskDue.setText(taskDueArr.get(taskIndexPar).toString());
         colorStatus();
     }
 
@@ -1223,10 +1218,10 @@ public class DashboardController implements Initializable {
                 int selectedIndex = indexes[1];
                 String text = projectDetailsArea.getText();
 
-                mainVBox.getChildren().get(3).setVisible(true);
-                mainVBox.getChildren().get(3).setManaged(true);
-                mainVBox.getChildren().get(2).setVisible(false);
-                mainVBox.getChildren().get(2).setManaged(false);
+                projectDetails.setManaged(true);
+                projectDetails.setVisible(true);
+                projectDetailsArea.setManaged(false);
+                projectDetailsArea.setVisible(false);
                 projectDetails.setText(projectDetailsArea.getText());
                 projectDetails.setWrapText(true);
 
