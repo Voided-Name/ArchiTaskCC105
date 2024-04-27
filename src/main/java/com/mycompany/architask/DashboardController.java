@@ -47,6 +47,7 @@ import java.util.Vector;
 import javafx.util.Callback;
 import javafx.scene.control.TextInputDialog;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.beans.binding.Bindings;
 import java.util.ArrayList;
 import java.time.LocalDate;
@@ -167,13 +168,14 @@ public class DashboardController implements Initializable {
         tableSetup();
 
         // VBox min height
-        mainVBox.minHeightProperty()
-                .bind(Bindings.createDoubleBinding(
-                        () -> projectDetailsArea.getHeight() + projectTitle.getLayoutBounds().getHeight()
-                                + deliverTable.getHeight(),
-                        projectDetailsArea.heightProperty(),
-                        projectTitle.layoutBoundsProperty(),
-                        deliverTable.heightProperty()));
+        // mainVBox.minHeightProperty()
+        // .bind(Bindings.createDoubleBinding(
+        // () -> projectDetailsArea.getHeight() +
+        // projectTitle.getLayoutBounds().getHeight()
+        // + deliverTable.getHeight(),
+        // projectDetailsArea.heightProperty(),
+        // projectTitle.layoutBoundsProperty(),
+        // deliverTable.heightProperty()));
 
         // ProjectList and ProjectDetails UI Setup
         projectList.setShowRoot(false);
@@ -280,6 +282,8 @@ public class DashboardController implements Initializable {
                     int delId = deliverableIdArr.get(getDelIndexInPar(indexes[1], indexes[0]));
                     App.editDeliverableDetails(delId, projectDetails.getText());
                 }
+            } else {
+                projectDetailsArea.positionCaret(projectDetailsArea.getText().length());
             }
         });
         projectDetailsArea.setOnKeyPressed(event -> {
@@ -1205,7 +1209,7 @@ public class DashboardController implements Initializable {
         taskTitle.setText(taskTitleArr.get(taskIndexPar));
         taskDetails.setText(taskDetailsArr.get(taskIndexPar));
         lblTaskStatus.setText(taskStatusArr.get(taskIndexPar));
-        lblTaskDue.setText(taskDueArr.get(taskIndexPar).toString());
+        lblTaskDue.setText(dateToString(taskDueArr.get(taskIndexPar)));
         colorStatus();
     }
 
