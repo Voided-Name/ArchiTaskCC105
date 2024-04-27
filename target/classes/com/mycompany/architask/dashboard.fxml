@@ -45,17 +45,17 @@
          <content>
             <VBox fx:id="mainVBox" spacing="10.0">
                <children>
-                  <Text fx:id="projectTitle" onMouseClicked="#editTitleDouble" strokeType="OUTSIDE" strokeWidth="0.0" text="Thisisviejrgojeorgjoergjoejrgiojoerjgoejrogjeorjgioerjgijerg" wrappingWidth="341.33673000335693">
+                  <Text fx:id="projectTitle" onMouseClicked="#editTitleDouble" strokeType="OUTSIDE" strokeWidth="0.0" text="Title" wrappingWidth="341.33673000335693">
                      <font>
                         <Font name="System Bold" size="35.0" />
                      </font>
                   </Text>
                   <Rectangle fx:id="line" arcHeight="5.0" arcWidth="5.0" fill="#e8b631" height="8.0" stroke="BLACK" strokeType="INSIDE" strokeWidth="0.0" width="200.0" />
-                  <TextArea fx:id="projectDetailsArea" prefHeight="78.0" prefWidth="370.0" style="-fx-background-color: white; -fx-background-insets: 0; -fx-text-fill: black; -fx-border-color: #0A2342;" text="Testing">
+                  <TextArea fx:id="projectDetailsArea" prefHeight="78.0" prefWidth="370.0" style="-fx-background-color: white; -fx-background-insets: 0; -fx-text-fill: black; -fx-border-color: #0A2342;" text="Details">
                      <font>
                         <Font size="35.0" />
                      </font></TextArea>
-                  <Label fx:id="projectDetails" onMouseClicked="#editProjectDetails" style="-fx-border-color: #0a2342;" text="Editable Text" wrapText="true">
+                  <Label fx:id="projectDetails" onMouseClicked="#editProjectDetails" style="-fx-border-color: #0a2342;" text="Details" wrapText="true">
                      <font>
                         <Font size="35.0" />
                      </font>
@@ -63,15 +63,27 @@
                         <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                      </padding>
                   </Label>
-                  <Label fx:id="lblDue" onMouseClicked="#editDueDate" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#ee5622" wrapText="true">
-                     <font>
-                        <Font size="35.0" />
-                     </font>
-                     <padding>
-                        <Insets left="10.0" right="10.0" />
-                     </padding>
-                  </Label>
-                  <Label fx:id="lblLead" text="Deliverable Lead Name" onMouseClicked="#editLead">
+                  <HBox prefHeight="62.0" prefWidth="370.0" spacing="20.0">
+                     <children>
+                        <Label fx:id="lblDue" onMouseClicked="#editDueDate" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#ee5622" wrapText="true">
+                           <font>
+                              <Font size="35.0" />
+                           </font>
+                           <padding>
+                              <Insets left="10.0" right="10.0" />
+                           </padding>
+                        </Label>
+                        <Label fx:id="lblStatus" onMouseClicked="#editDelStatus" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#26eb79" wrapText="true">
+                           <font>
+                              <Font size="35.0" />
+                           </font>
+                           <padding>
+                              <Insets left="10.0" right="10.0" />
+                           </padding>
+                        </Label>
+                     </children>
+                  </HBox>
+                  <Label fx:id="lblLead" onMouseClicked="#editLead" text="Deliverable Lead Name">
                      <font>
                         <Font size="25.0" />
                      </font>
@@ -88,6 +100,44 @@
                      <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" resizable="false" text="Lead" />
                     </columns>
                   </TableView>
+                  <Text fx:id="taskTitle" onMouseClicked="#editTaskTitle" strokeType="OUTSIDE" strokeWidth="0.0" text="Task Name" wrappingWidth="341.33673000335693">
+                     <font>
+                        <Font name="System Bold" size="35.0" />
+                     </font>
+                  </Text>
+                  <TextArea fx:id="taskDetailsArea" prefHeight="78.0" prefWidth="370.0" style="-fx-background-color: white; -fx-background-insets: 0; -fx-text-fill: black; -fx-border-color: #0A2342;" text="Task Details">
+                     <font>
+                        <Font size="35.0" />
+                     </font>
+                  </TextArea>
+                  <Label fx:id="taskDetails" onMouseClicked="#editTaskDetails" style="-fx-border-color: #0a2342;" text="Task Details" wrapText="true">
+                     <font>
+                        <Font size="35.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                     </padding>
+                  </Label>
+                  <HBox prefHeight="62.0" prefWidth="370.0" spacing="20.0">
+                     <children>
+                        <Label fx:id="lblTaskDue" onMouseClicked="#editTaskDue" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#ee5622" wrapText="true">
+                           <font>
+                              <Font size="35.0" />
+                           </font>
+                           <padding>
+                              <Insets left="10.0" right="10.0" />
+                           </padding>
+                        </Label>
+                        <Label fx:id="lblTaskStatus" onMouseClicked="#editTaskStatus" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#26eb79" wrapText="true">
+                           <font>
+                              <Font size="35.0" />
+                           </font>
+                           <padding>
+                              <Insets left="10.0" right="10.0" />
+                           </padding>
+                        </Label>
+                     </children>
+                  </HBox>
                </children>
             </VBox>
          </content>

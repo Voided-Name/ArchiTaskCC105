@@ -39,6 +39,7 @@ import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.skin.DatePickerSkin;
 import javafx.stage.Popup;
 import java.util.Vector;
 import javafx.util.Callback;
@@ -117,7 +118,19 @@ public class DashboardController implements Initializable {
     @FXML
     Label lblLead;
     @FXML
+    Label lblStatus;
+    @FXML
+    Label lblTaskStatus;
+    @FXML
+    Label lblTaskDue;
+    @FXML
     Rectangle line;
+    @FXML
+    Text taskTitle;
+    @FXML
+    Label taskDetails;
+    @FXML
+    TextArea taskDetailsArea;
 
     /**
      * Initializes the controller class.
@@ -134,70 +147,213 @@ public class DashboardController implements Initializable {
         // }
     }
 
-    private void archiveTask() {
-        int deltableIndex = 0;
-        int id = 0;
-        int index = 0;
+    /*
+     * ==============================
+     * Initial setup functions
+     * ==============================
+     * This section includes methods for the initial ui setups such as
+     * bindings and listeners.
+     */
+    private void uiSetup() {
+        contextMenuSetup();
+        tableSetup();
 
-        deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
-        id = Integer.parseInt((data.get(deltableIndex))[0]);
-        App.archiveTask(id);
-        index = taskIdArr.indexOf(id);
+        // VBox min height
+        mainVBox.minHeightProperty()
+                .bind(Bindings.createDoubleBinding(
+                        () -> projectDetailsArea.getHeight() + projectTitle.getLayoutBounds().getHeight()
+                                + deliverTable.getHeight(),
+                        projectDetailsArea.heightProperty(),
+                        projectTitle.layoutBoundsProperty(),
+                        deliverTable.heightProperty()));
 
-        taskDeliverableIdArr.remove(index);
-        taskIdArr.remove(index);
-        taskTitleArr.remove(index);
-        taskDetailsArr.remove(index);
-        taskStatusArr.remove(index);
-        taskDueArr.remove(index);
+        // ProjectList and ProjectDetails UI Setup
+        projectList.setShowRoot(false);
+        projectList.setRoot(projectListRoot);
+        colorFolding();
 
-        refreshTable();
-    }
+        projectTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+        taskTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+        projectDetails.prefWidthProperty().bind(mainVBox.widthProperty().multiply(0.8));
+        taskDetails.prefWidthProperty().bind(mainVBox.widthProperty().multiply(0.9));
+        line.widthProperty().bind(mainVBox.widthProperty().multiply(0.9));
 
-    private void archiveDeliverable(int treeIndex) {
-        TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
-        int deltableIndex = 0;
-        int id = 0;
-        int index = 0;
+        projectDetailsArea.setWrapText(true);
+        taskDetailsArea.setWrapText(true);
+        projectDetailsArea.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+        taskDetailsArea.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
 
-        if (treeIndex == -1) {
-            selectedProject = projectList.getSelectionModel().getSelectedItem();
-            deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
-            id = Integer.parseInt((data.get(deltableIndex))[0]);
-            App.archiveDeliverable(id);
-            index = deliverableIdArr.indexOf(id);
-        } else {
-            id = deliverableIdArr.get(treeIndex);
-            App.archiveDeliverable(deliverableIdArr.get(treeIndex));
-            index = treeIndex;
-        }
+        taskDetailsArea.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (oldValue) {
+                int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+                int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+                int taskIndexPar = taskIdArr.indexOf(taskId);
+                String text = taskDetailsArea.getText();
+                int indexOfLastChar = 0;
 
-        int delIndexInArrs = 0;
-        for (TreeItem<String> project : projectListRoot.getChildren()) {
-            if (project == selectedProject) {
-                for (int x = 0; x < project.getChildren().size(); x++) {
-                    if (deliverableIdArr.get(delIndexInArrs) == id) {
-                        project.getChildren().remove(x);
-                    }
-                    delIndexInArrs++;
-                }
-                break;
+                taskDetails.setVisible(true);
+                taskDetails.setManaged(true);
+                taskDetailsArea.setManaged(false);
+                taskDetailsArea.setVisible(false);
+                taskDetails.setText(taskDetailsArea.getText());
+                taskDetails.setWrapText(true);
+
+                taskDetailsArr.set(taskIndexPar, taskDetails.getText());
             }
-            delIndexInArrs = delIndexInArrs + project.getChildren().size();
-        }
+        });
 
-        deliverableProjectIdArr.remove(index);
-        deliverableIdArr.remove(index);
-        deliverableTitleArr.remove(index);
-        deliverableDetailsArr.remove(index);
-        deliverableStatusArr.remove(index);
-        deliverableLeadIdArr.remove(index);
-        deliverableLeadArr.remove(index);
-        deliverableDueArr.remove(index);
+        taskDetailsArea.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ESCAPE || (event.getCode() == KeyCode.ENTER) && !event.isShiftDown()) {
+                int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+                int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+                int taskIndexPar = taskIdArr.indexOf(taskId);
+                String text = taskDetailsArea.getText();
+                int indexOfLastChar = 0;
 
-        if (treeIndex == -1) {
-            refreshTable();
-        }
+                if (event.getCode() == KeyCode.ENTER) {
+                    for (int x = text.length() - 1; x > 0; x--) {
+                        if (Character.isWhitespace(text.charAt(x))) {
+                            indexOfLastChar = x;
+                            break;
+                        }
+                    }
+
+                    text = text.substring(0, indexOfLastChar);
+
+                    projectDetailsArea.setText(text);
+                }
+
+                taskDetails.setVisible(true);
+                taskDetails.setManaged(true);
+                taskDetailsArea.setManaged(false);
+                taskDetailsArea.setVisible(false);
+                taskDetails.setText(taskDetailsArea.getText());
+                taskDetails.setWrapText(true);
+
+                taskDetailsArr.set(taskIndexPar, taskDetails.getText());
+                App.editTaskDetails(taskId, taskDetails.getText());
+            } else if (event.getCode() == KeyCode.ENTER && event.isShiftDown()) {
+                int caretPosition = taskDetailsArea.getCaretPosition();
+                String currentText = taskDetailsArea.getText();
+                String newText = currentText.substring(0, caretPosition) + "\n" + currentText.substring(caretPosition);
+                taskDetailsArea.setText(newText);
+                taskDetailsArea.positionCaret(caretPosition + 1);
+            }
+        });
+        projectDetailsArea.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (oldValue) {
+                int[] indexes = getSelectedIndex();
+                int selectedIndex = indexes[1];
+                String text = projectDetailsArea.getText();
+                int indexOfLastChar = 0;
+                System.out.println("debug 1");
+
+                mainVBox.getChildren().get(3).setVisible(true);
+                mainVBox.getChildren().get(3).setManaged(true);
+                mainVBox.getChildren().get(2).setVisible(false);
+                mainVBox.getChildren().get(2).setManaged(false);
+                projectDetails.setText(projectDetailsArea.getText());
+                projectDetails.setWrapText(true);
+
+                if (projectList.getSelectionModel().getSelectedItem().getParent() == projectListRoot) {
+                    projectDetailsArr.set(selectedIndex, projectDetails.getText());
+                    App.editProjectDetails(projectIdArr.get(selectedIndex), projectDetails.getText());
+                    System.out.println("debug 4");
+                } else {
+                    deliverableDetailsArr.set(selectedIndex, projectDetails.getText());
+                    int delId = deliverableIdArr.get(getDelIndexInPar(indexes[1], indexes[0]));
+                    App.editDeliverableDetails(delId, projectDetails.getText());
+                }
+            }
+        });
+        projectDetailsArea.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ESCAPE || (event.getCode() == KeyCode.ENTER) && !event.isShiftDown()) {
+                int[] indexes = getSelectedIndex();
+                int selectedIndex = indexes[1];
+                String text = projectDetailsArea.getText();
+                int indexOfLastChar = 0;
+                System.out.println("debug 1");
+
+                if (event.getCode() == KeyCode.ENTER) {
+                    for (int x = text.length() - 1; x > 0; x--) {
+                        if (Character.isWhitespace(text.charAt(x))) {
+                            indexOfLastChar = x;
+                            break;
+                        }
+                    }
+
+                    text = text.substring(0, indexOfLastChar);
+
+                    projectDetailsArea.setText(text);
+                }
+                System.out.println("debug 2");
+
+                mainVBox.getChildren().get(3).setVisible(true);
+                mainVBox.getChildren().get(3).setManaged(true);
+                mainVBox.getChildren().get(2).setVisible(false);
+                mainVBox.getChildren().get(2).setManaged(false);
+                projectDetails.setText(projectDetailsArea.getText());
+                projectDetails.setWrapText(true);
+
+                System.out.println("debug 3");
+
+                if (projectList.getSelectionModel().getSelectedItem().getParent() == projectListRoot) {
+                    projectDetailsArr.set(selectedIndex, projectDetails.getText());
+                    App.editProjectDetails(projectIdArr.get(selectedIndex), projectDetails.getText());
+                    System.out.println("debug 4");
+                } else {
+                    deliverableDetailsArr.set(selectedIndex, projectDetails.getText());
+                    int delId = deliverableIdArr.get(getDelIndexInPar(indexes[1], indexes[0]));
+                    App.editDeliverableDetails(delId, projectDetails.getText());
+                }
+
+            } else if (event.getCode() == KeyCode.ENTER && event.isShiftDown()) {
+                int caretPosition = projectDetailsArea.getCaretPosition();
+                String currentText = projectDetailsArea.getText();
+                String newText = currentText.substring(0, caretPosition) + "\n" + currentText.substring(caretPosition);
+                projectDetailsArea.setText(newText);
+                projectDetailsArea.positionCaret(caretPosition + 1);
+            }
+
+        });
+        mainVBox.getChildren().get(2).setVisible(false);
+        mainVBox.getChildren().get(2).setManaged(false);
+
+        deliverTable.setOnMouseClicked(event -> {
+            TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+            System.out.println(selected.getParent());
+
+            if (selected.getParent() != projectListRoot) {
+                System.out.println(deliverTable.getSelectionModel().getFocusedIndex());
+                if (deliverTable.getSelectionModel().getFocusedIndex() != -1) {
+                    selectTask();
+                }
+            }
+        });
+
+        deliverTable.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+                System.out.println(selected.getParent());
+
+                if (selected.getParent() != projectListRoot) {
+                    System.out.println(deliverTable.getSelectionModel().getFocusedIndex());
+                    if (deliverTable.getSelectionModel().getFocusedIndex() != -1) {
+                        taskTitle.setManaged(true);
+                        taskDetails.setManaged(true);
+                        lblTaskDue.setManaged(true);
+                        lblTaskStatus.setManaged(true);
+                        taskTitle.setVisible(true);
+                        taskDetails.setVisible(true);
+                        lblTaskDue.setVisible(true);
+                        lblTaskStatus.setVisible(true);
+                    }
+                }
+            }
+        });
+
+        setupProjectTreeView();
+        getAllTasks();
     }
 
     private void contextMenuSetup() {
@@ -209,29 +365,24 @@ public class DashboardController implements Initializable {
         deliverTable.setContextMenu(mItableMenu);
 
         mIedit.setOnAction((event) -> {
-            Alert dialog = new Alert(AlertType.CONFIRMATION, "Open Deliverable");
-            dialog.showAndWait().ifPresent(response -> {
-                if (response == ButtonType.OK) {
-                    int deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
-                    int id = Integer.parseInt((data.get(deltableIndex))[0]);
-                    TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
-                    int delIndexInArrs = 0;
+            int deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
+            int id = Integer.parseInt((data.get(deltableIndex))[0]);
+            TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
+            int delIndexInArrs = 0;
 
-                    for (TreeItem<String> project : projectListRoot.getChildren()) {
-                        if (project == selectedProject) {
-                            for (int x = 0; x < project.getChildren().size(); x++) {
-                                if (deliverableIdArr.get(delIndexInArrs) == id) {
-                                    projectList.getSelectionModel().select(project.getChildren().get(x));
-                                }
-                                delIndexInArrs++;
-                            }
-                            break;
+            for (TreeItem<String> project : projectListRoot.getChildren()) {
+                if (project == selectedProject) {
+                    for (int x = 0; x < project.getChildren().size(); x++) {
+                        if (deliverableIdArr.get(delIndexInArrs) == id) {
+                            projectList.getSelectionModel().select(project.getChildren().get(x));
                         }
-                        delIndexInArrs = delIndexInArrs + project.getChildren().size();
+                        delIndexInArrs++;
                     }
-                    selectProject();
+                    break;
                 }
-            });
+                delIndexInArrs = delIndexInArrs + project.getChildren().size();
+            }
+            selectProject();
         });
 
         mIdelete.setOnAction((event) -> {
@@ -288,7 +439,6 @@ public class DashboardController implements Initializable {
         deliverLeadCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue()[4]));
         deliverTable.setItems(data);
         deliverTable.setMinHeight(200);
-        deliverTable.setFocusTraversable(false);
     }
 
     // not yet fully functional
@@ -296,7 +446,7 @@ public class DashboardController implements Initializable {
         projectList.setCellFactory(new Callback<TreeView<String>, TreeCell<String>>() {
             @Override
             public TreeCell<String> call(TreeView<String> param) {
-                return new TreeCell<String>() {
+                TreeCell<String> treeCell = new TreeCell<String>() {
                     protected void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
                         if (empty || item == null) {
@@ -322,125 +472,11 @@ public class DashboardController implements Initializable {
                         return depth;
                     }
                 };
-
+                treeCell.prefWidthProperty().bind(projectList.widthProperty().subtract(5));
+                treeCell.setWrapText(true);
+                return treeCell;
             }
         });
-    }
-
-    private void uiSetup() {
-        contextMenuSetup();
-        tableSetup();
-
-        // VBox min height
-        mainVBox.minHeightProperty()
-                .bind(Bindings.createDoubleBinding(
-                        () -> projectDetailsArea.getHeight() + projectTitle.getLayoutBounds().getHeight()
-                                + deliverTable.getHeight(),
-                        projectDetailsArea.heightProperty(),
-                        projectTitle.layoutBoundsProperty(),
-                        deliverTable.heightProperty()));
-
-        // ProjectList and ProjectDetails UI Setup
-        projectList.setShowRoot(false);
-        projectList.setRoot(projectListRoot);
-        colorFolding();
-        projectTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
-        projectDetails.prefWidthProperty().bind(mainVBox.widthProperty().multiply(0.9));
-        line.widthProperty().bind(mainVBox.widthProperty().multiply(0.9));
-        projectDetailsArea.setWrapText(true);
-        projectDetailsArea.prefWidthProperty().bind(mainScroll.widthProperty());
-        // projectDetailsArea.prefHeightProperty().bind(Bindings.createDoubleBinding(
-        // () -> projectDetails.getLayoutBounds().getHeight(),
-        // projectDetails.layoutBoundsProperty()));
-        projectDetailsArea.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.ESCAPE || (event.getCode() == KeyCode.ENTER) && !event.isShiftDown()) {
-                int[] indexes = getSelectedIndex();
-                int selectedIndex = indexes[1];
-                String text = projectDetailsArea.getText();
-                int indexOfLastChar = 0;
-                System.out.println("debug 1");
-
-                if (event.getCode() == KeyCode.ENTER) {
-                    for (int x = text.length() - 1; x > 0; x--) {
-                        if (Character.isWhitespace(text.charAt(x))) {
-                            indexOfLastChar = x;
-                            break;
-                        }
-                    }
-
-                    text = text.substring(0, indexOfLastChar);
-
-                    projectDetailsArea.setText(text);
-                }
-                System.out.println("debug 2");
-
-                mainVBox.getChildren().get(3).setVisible(true);
-                mainVBox.getChildren().get(3).setManaged(true);
-                mainVBox.getChildren().get(2).setVisible(false);
-                mainVBox.getChildren().get(2).setManaged(false);
-                projectDetails.setText(projectDetailsArea.getText());
-                projectDetails.setWrapText(true);
-
-                System.out.println("debug 3");
-
-                if (projectList.getSelectionModel().getSelectedItem().getParent() == projectListRoot) {
-                    projectDetailsArr.set(selectedIndex, projectDetails.getText());
-                    App.editProjectDetails(projectIdArr.get(selectedIndex), projectDetails.getText());
-                    System.out.println("debug 4");
-                } else {
-                    deliverableDetailsArr.set(selectedIndex, projectDetails.getText());
-                    int delId = deliverableIdArr.get(getDelIndexInPar(indexes[1], indexes[0]));
-                    App.editDeliverableDetails(delId, projectDetails.getText());
-                }
-
-            } else if (event.getCode() == KeyCode.ENTER && event.isShiftDown()) {
-                int caretPosition = projectDetailsArea.getCaretPosition();
-                String currentText = projectDetailsArea.getText();
-                String newText = currentText.substring(0, caretPosition) + "\n" + currentText.substring(caretPosition);
-                projectDetailsArea.setText(newText);
-                projectDetailsArea.positionCaret(caretPosition + 1);
-            }
-
-        });
-        mainVBox.getChildren().get(2).setVisible(false);
-        mainVBox.getChildren().get(2).setManaged(false);
-
-        setupProjectTreeView();
-        getAllTasks();
-    }
-
-    private void getAllTasks() {
-        int taskDeliverableId;
-        int taskId;
-        String taskTitle;
-        String taskDetails;
-        String taskStatus;
-        java.sql.Date taskDue;
-
-        ResultSet rs = App.getTasks();
-        try {
-            ResultSetMetaData rsmd = rs.getMetaData();
-            System.out.println(rsmd.getColumnCount());
-
-            while (rs.next()) {
-                taskDeliverableId = rs.getInt("deliverableid");
-                taskId = rs.getInt("taskid");
-                taskTitle = rs.getString("tasktitle");
-                taskDetails = rs.getString("taskdetails");
-                taskStatus = rs.getString("status");
-                taskDue = rs.getDate("taskdue");
-
-                taskDeliverableIdArr.add(taskDeliverableId);
-                taskIdArr.add(taskId);
-                taskTitleArr.add(taskTitle);
-                taskDetailsArr.add(taskDetails);
-                taskStatusArr.add(taskStatus);
-                taskDueArr.add(taskDue);
-            }
-        } catch (SQLException err) {
-            err.printStackTrace();
-        }
-        App.closeConnection();
     }
 
     private void setupProjectTreeView() {
@@ -550,6 +586,202 @@ public class DashboardController implements Initializable {
         App.cursorDefault();
     }
 
+    /*
+     * ==============================
+     * End of Initial setup functions
+     * ==============================
+     */
+
+    private void archiveTask() {
+        int deltableIndex = 0;
+        int id = 0;
+        int index = 0;
+
+        deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
+        id = Integer.parseInt((data.get(deltableIndex))[0]);
+        App.archiveTask(id);
+        index = taskIdArr.indexOf(id);
+
+        taskDeliverableIdArr.remove(index);
+        taskIdArr.remove(index);
+        taskTitleArr.remove(index);
+        taskDetailsArr.remove(index);
+        taskStatusArr.remove(index);
+        taskDueArr.remove(index);
+
+        refreshTable();
+    }
+
+    private void getAllTasks() {
+        int taskDeliverableId;
+        int taskId;
+        String taskTitle;
+        String taskDetails;
+        String taskStatus;
+        java.sql.Date taskDue;
+
+        ResultSet rs = App.getTasks();
+        try {
+            ResultSetMetaData rsmd = rs.getMetaData();
+            System.out.println(rsmd.getColumnCount());
+
+            while (rs.next()) {
+                taskDeliverableId = rs.getInt("deliverableid");
+                taskId = rs.getInt("taskid");
+                taskTitle = rs.getString("tasktitle");
+                taskDetails = rs.getString("taskdetails");
+                taskStatus = rs.getString("status");
+                taskDue = rs.getDate("taskdue");
+
+                taskDeliverableIdArr.add(taskDeliverableId);
+                taskIdArr.add(taskId);
+                taskTitleArr.add(taskTitle);
+                taskDetailsArr.add(taskDetails);
+                taskStatusArr.add(taskStatus);
+                taskDueArr.add(taskDue);
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        App.closeConnection();
+    }
+
+    private ArrayList<ArrayList<String>> getTasksUnderDeliverable(int indexDeliver) {
+        ArrayList<ArrayList<String>> taskUnderProject = new ArrayList<ArrayList<String>>();
+        int deliverableId = deliverableIdArr.get(indexDeliver);
+
+        int index = 0;
+        for (int x = 0; x < taskIdArr.size(); x++) {
+            if (taskDeliverableIdArr.get(x) == deliverableId) {
+                ArrayList<String> buffer = new ArrayList<String>();
+                buffer.add(taskIdArr.get(x).toString());
+                buffer.add(taskTitleArr.get(x));
+                buffer.add(taskStatusArr.get(x));
+                buffer.add(taskDueArr.get(x).toString());
+                taskUnderProject.add(buffer);
+                index++;
+            }
+        }
+
+        for (ArrayList<String> task : taskUnderProject) {
+            System.out.println(task.toString());
+        }
+        return taskUnderProject;
+    }
+
+    private void archiveDeliverable(int treeIndex) {
+        TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
+        int deltableIndex = 0;
+        int id = 0;
+        int index = 0;
+
+        if (treeIndex == -1) {
+            selectedProject = projectList.getSelectionModel().getSelectedItem();
+            deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
+            id = Integer.parseInt((data.get(deltableIndex))[0]);
+            App.archiveDeliverable(id);
+            index = deliverableIdArr.indexOf(id);
+        } else {
+            id = deliverableIdArr.get(treeIndex);
+            App.archiveDeliverable(deliverableIdArr.get(treeIndex));
+            index = treeIndex;
+        }
+
+        int delIndexInArrs = 0;
+        for (TreeItem<String> project : projectListRoot.getChildren()) {
+            if (project == selectedProject) {
+                for (int x = 0; x < project.getChildren().size(); x++) {
+                    if (deliverableIdArr.get(delIndexInArrs) == id) {
+                        project.getChildren().remove(x);
+                    }
+                    delIndexInArrs++;
+                }
+                break;
+            }
+            delIndexInArrs = delIndexInArrs + project.getChildren().size();
+        }
+
+        deliverableProjectIdArr.remove(index);
+        deliverableIdArr.remove(index);
+        deliverableTitleArr.remove(index);
+        deliverableDetailsArr.remove(index);
+        deliverableStatusArr.remove(index);
+        deliverableLeadIdArr.remove(index);
+        deliverableLeadArr.remove(index);
+        deliverableDueArr.remove(index);
+
+        if (treeIndex == -1) {
+            refreshTable();
+        }
+    }
+
+    @FXML
+    public void editLead() {
+        System.out.println("Editing Lead");
+        int[] indexes = getSelectedIndex();
+        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+        int idOfArchs = 0;
+
+        Vector<ArrayList<Object>> archNames = new Vector<>();
+        archNames = App.getArchNames();
+
+        ArrayList<Integer> userIdParallel = archNamesToIdArr(archNames);
+        ArrayList<String> archNamesArr = archNamesToArr(archNames);
+        System.out.println(archNames);
+        System.out.println(archNamesArr);
+
+        Dialog<Integer> dialogLead = new Dialog<>();
+        ComboBox<String> cbox = new ComboBox<String>(FXCollections.observableArrayList(archNamesArr));
+        dialogLead.setTitle("Set Deliverable Lead");
+        dialogLead.setHeaderText(null);
+        dialogLead.setTitle("Choose Architect:");
+        dialogLead.getDialogPane().setContent(cbox);
+        dialogLead.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        cbox.getSelectionModel().selectFirst();
+
+        dialogLead.setResultConverter(dialogButton -> {
+            if (dialogButton == ButtonType.OK) {
+                return cbox.getSelectionModel().getSelectedIndex();
+            }
+            return null;
+        });
+
+        Optional<Integer> result = dialogLead.showAndWait();
+
+        if (result.isPresent()) {
+            int index = Integer.valueOf(result.get());
+            String archName = archNamesArr.get(index);
+            deliverableLeadArr.set(delIndexParallel, archName);
+            deliverableLeadIdArr.set(delIndexParallel, userIdParallel.get(index));
+            lblLead.setText(archName);
+            App.updateDelLead(userIdParallel.get(index), deliverableIdArr.get(delIndexParallel));
+        }
+    }
+
+    private ArrayList<ArrayList<String>> getDeliverablesUnderProject(int indexProject) {
+        ArrayList<ArrayList<String>> deliverUnderProject = new ArrayList<ArrayList<String>>();
+        int projectId = projectIdArr.get(indexProject);
+
+        int index = 0;
+        for (int x = 0; x < deliverableIdArr.size(); x++) {
+            if (deliverableProjectIdArr.get(x) == projectId) {
+                ArrayList<String> buffer = new ArrayList<String>();
+                buffer.add(deliverableIdArr.get(x).toString());
+                buffer.add(deliverableTitleArr.get(x));
+                buffer.add(deliverableStatusArr.get(x));
+                buffer.add(deliverableDueArr.get(x).toString());
+                buffer.add(deliverableLeadArr.get(x));
+                deliverUnderProject.add(buffer);
+                index++;
+            }
+        }
+
+        for (ArrayList<String> deliverable : deliverUnderProject) {
+            System.out.println(deliverable.toString());
+        }
+        return deliverUnderProject;
+    }
+
     @FXML
     private void projectAdd() {
         TextInputDialog dialog = new TextInputDialog("");
@@ -560,40 +792,6 @@ public class DashboardController implements Initializable {
 
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(inpt -> addProject(inpt));
-    }
-
-    @FXML
-    private void btnDelete() {
-        int[] indexes = getSelectedIndex();
-        String msg = "Project";
-        if (!(indexes[0] == -1)) {
-            msg = "Deliverable";
-
-        }
-        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-        Alert dialog = new Alert(AlertType.CONFIRMATION, "Delete " + msg + "(" + selected.getValue() + ")");
-        dialog.showAndWait().ifPresent(response -> {
-            if (indexes[0] == -1) {
-                System.out.println("Index id to delete: " + indexes[1]);
-                System.out.println("ProjectIdArr length: " + projectIdArr.size());
-                App.archiveProject(projectIdArr.get(indexes[1]));
-                projectIdArr.remove(indexes[1]);
-                projectTitleArr.remove(indexes[1]);
-                projectDetailsArr.remove(indexes[1]);
-                projectImageArr.remove(indexes[1]);
-                projectListRoot.getChildren().remove(selected);
-                projectList.getSelectionModel().selectFirst();
-                selectProject();
-            } else {
-                int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
-                archiveDeliverable(delIndexParallel);
-                projectListRoot.getChildren().remove(selected);
-                TreeItem<String> parent = selected.getParent();
-                parent.getChildren().remove(selected);
-                projectList.getSelectionModel().select(parent);
-                selectProject();
-            }
-        });
     }
 
     private void addProject(String projectName) {
@@ -614,56 +812,6 @@ public class DashboardController implements Initializable {
         projectTitleArr.add(projectName);
         projectDetailsArr.add("Double Click to Edit");
         projectImageArr.add("");
-    }
-
-    private void addToTable(String name) {
-        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-        int indexes[] = getSelectedIndex();
-
-        if (indexes[0] == -1) {
-            int leafIndex = 0;
-
-            if (deliverTable.getItems().size() == 0) {
-                leafIndex = 0;
-            } else {
-                leafIndex = deliverTable.getItems().size();
-            }
-
-            int deliverId = 0;
-
-            projectListRoot.getChildren().get(indexes[1]).getChildren().add(leafIndex,
-                    new TreeItem<String>(name));
-
-            deliverId = App.addDeliverable(projectIdArr.get(indexes[1]), name);
-            deliverableProjectIdArr.add(leafIndex, projectIdArr.get(indexes[1]));
-            deliverableIdArr.add(leafIndex, deliverId);
-            deliverableTitleArr.add(leafIndex, name);
-            deliverableDetailsArr.add(leafIndex, "Double Click to Edit");
-            deliverableStatusArr.add(leafIndex, "TODO");
-            deliverableLeadArr.add(leafIndex, "");
-            deliverableLeadIdArr.add(leafIndex, 0);
-            deliverableDueArr.add(leafIndex, new java.sql.Date((new java.util.Date()).getTime()));
-        } else {
-            int delIndexParallel = getDelIndexInPar(indexes[0], indexes[1]);
-            int leafIndex = 0;
-
-            if (deliverTable.getItems().size() == 0) {
-                leafIndex = 0;
-            } else {
-                leafIndex = deliverTable.getItems().size();
-            }
-
-            int taskId = 0;
-
-            taskId = App.addTask(deliverableIdArr.get(delIndexParallel), name);
-            taskDeliverableIdArr.add(leafIndex, deliverableIdArr.get(delIndexParallel));
-            taskIdArr.add(leafIndex, taskId);
-            taskTitleArr.add(leafIndex, name);
-            taskDetailsArr.add(leafIndex, name);
-            taskStatusArr.add(leafIndex, "TODO");
-            taskDueArr.add(leafIndex, new java.sql.Date((new java.util.Date()).getTime()));
-        }
-        refreshTable();
     }
 
     private void changeProjectName(String projectName) {
@@ -712,10 +860,8 @@ public class DashboardController implements Initializable {
         }
 
         selectedProject.setValue(projectName);
-        projectViewUpdate(indexes[0]);
-    }
 
-    private void projectViewUpdate(int condition) {
+        int condition = indexes[0];
         TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
         if (condition == -1) {
             projectTitle.setText(selected.getValue());
@@ -724,51 +870,197 @@ public class DashboardController implements Initializable {
         }
     }
 
-    private ArrayList<ArrayList<String>> getTasksUnderDeliverable(int indexDeliver) {
-        ArrayList<ArrayList<String>> taskUnderProject = new ArrayList<ArrayList<String>>();
-        int deliverableId = deliverableIdArr.get(indexDeliver);
+    @FXML
+    private void editTitleDouble(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
 
-        int index = 0;
-        for (int x = 0; x < taskIdArr.size(); x++) {
-            if (taskDeliverableIdArr.get(x) == deliverableId) {
-                ArrayList<String> buffer = new ArrayList<String>();
-                buffer.add(taskIdArr.get(x).toString());
-                buffer.add(taskTitleArr.get(x));
-                buffer.add(taskStatusArr.get(x));
-                buffer.add(taskDueArr.get(x).toString());
-                taskUnderProject.add(buffer);
-                index++;
+            TreeItem<String> selectedProjectParent = selectedProject.getParent();
+            if (selectedProjectParent == projectListRoot) {
+                TextInputDialog dialog = new TextInputDialog(projectTitle.getText());
+                dialog.setTitle("Change Project Name");
+                dialog.setHeaderText(null);
+                dialog.setContentText("Project Name:");
+                dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(inpt -> changeProjectName(inpt));
+            } else {
+                TextInputDialog dialog = new TextInputDialog(selectedProject.getValue());
+                dialog.setTitle("Change Deliverable Name");
+                dialog.setHeaderText(null);
+                dialog.setContentText("Deliverable Name:");
+                dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(inpt -> changeProjectName(inpt));
             }
         }
-
-        for (ArrayList<String> task : taskUnderProject) {
-            System.out.println(task.toString());
-        }
-        return taskUnderProject;
     }
 
-    private ArrayList<ArrayList<String>> getDeliverablesUnderProject(int indexProject) {
-        ArrayList<ArrayList<String>> deliverUnderProject = new ArrayList<ArrayList<String>>();
-        int projectId = projectIdArr.get(indexProject);
+    @FXML
+    private void editTaskTitle(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            TextInputDialog dialog = new TextInputDialog(taskTitle.getText());
+            dialog.setTitle("Change Task Name");
+            dialog.setHeaderText(null);
+            dialog.setContentText("Task Name:");
+            dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
 
-        int index = 0;
-        for (int x = 0; x < deliverableIdArr.size(); x++) {
-            if (deliverableProjectIdArr.get(x) == projectId) {
-                ArrayList<String> buffer = new ArrayList<String>();
-                buffer.add(deliverableIdArr.get(x).toString());
-                buffer.add(deliverableTitleArr.get(x));
-                buffer.add(deliverableStatusArr.get(x));
-                buffer.add(deliverableDueArr.get(x).toString());
-                buffer.add(deliverableLeadArr.get(x));
-                deliverUnderProject.add(buffer);
-                index++;
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(inpt -> changeTaskName(inpt));
+        }
+    }
+
+    private void changeTaskName(String name) {
+        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+        int taskIndexPar = taskIdArr.indexOf(taskId);
+
+        taskTitleArr.set(taskIndexPar, name);
+        App.editTaskTitle(taskId, name);
+        taskTitle.setText(name);
+        refreshTable();
+    }
+
+    @FXML
+    private void editTaskDetails(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            Double layoutHeight = taskDetails.getHeight();
+            taskDetails.setVisible(false);
+            taskDetails.setManaged(false);
+            taskDetailsArea.setVisible(true);
+            taskDetailsArea.setManaged(true);
+
+            taskDetailsArea.setText(taskDetails.getText());
+            taskDetailsArea.setMinHeight(layoutHeight + 20);
+            taskDetailsArea.setMaxHeight(layoutHeight + 20);
+            taskDetailsArea.requestFocus();
+            mainScroll.setVvalue(mainScroll.getVmin());
+        }
+    }
+
+    @FXML
+    private void editProjectDetails(MouseEvent event) {
+        if (event.getClickCount() == 2) {
+            Double layoutHeight = projectDetails.getHeight();
+            System.out.println("Project Details: " + projectDetails.getHeight());
+            System.out.println("Project Area: " + projectDetailsArea.getHeight());
+            mainVBox.getChildren().get(3).setVisible(false);
+            mainVBox.getChildren().get(3).setManaged(false);
+            mainVBox.getChildren().get(2).setVisible(true);
+            mainVBox.getChildren().get(2).setManaged(true);
+
+            projectDetailsArea.setText(projectDetails.getText());
+            projectDetailsArea.setMinHeight(layoutHeight + 20);
+            projectDetailsArea.setMaxHeight(layoutHeight + 20);
+            System.out.println("Project Details: " + projectDetails.getHeight());
+            System.out.println("Project Area: " + projectDetailsArea.getHeight());
+            projectDetailsArea.requestFocus();
+            mainScroll.setVvalue(mainScroll.getVmin());
+        }
+    }
+
+    private void colorStatus() {
+        if (lblStatus.getText().equals("TODO")) {
+            lblStatus.setStyle("-fx-border-color:  #ee5622; -fx-text-fill: #ee5622");
+        } else if (lblStatus.getText().equals("ONGOING")) {
+            lblStatus.setStyle("-fx-border-color:   #edab24; -fx-text-fill: #edab24");
+        } else {
+            lblStatus.setStyle("-fx-border-color:  #26eb79; -fx-text-fill: #26eb79");
+        }
+
+        if (lblTaskStatus.getText().equals("TODO")) {
+            lblTaskStatus.setStyle("-fx-border-color:  #ee5622; -fx-text-fill: #ee5622");
+        } else if (lblTaskStatus.getText().equals("ONGOING")) {
+            lblTaskStatus.setStyle("-fx-border-color:   #edab24; -fx-text-fill: #edab24");
+        } else {
+            lblTaskStatus.setStyle("-fx-border-color:  #26eb79; -fx-text-fill: #26eb79");
+        }
+    }
+
+    @FXML
+    private void btnDelete() {
+        int[] indexes = getSelectedIndex();
+        String msg = "Project";
+        if (!(indexes[0] == -1)) {
+            msg = "Deliverable";
+
+        }
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        Alert dialog = new Alert(AlertType.CONFIRMATION, "Delete " + msg + "(" + selected.getValue() + ")");
+        dialog.showAndWait().ifPresent(response -> {
+            if (indexes[0] == -1) {
+                System.out.println("Index id to delete: " + indexes[1]);
+                System.out.println("ProjectIdArr length: " + projectIdArr.size());
+                App.archiveProject(projectIdArr.get(indexes[1]));
+                projectIdArr.remove(indexes[1]);
+                projectTitleArr.remove(indexes[1]);
+                projectDetailsArr.remove(indexes[1]);
+                projectImageArr.remove(indexes[1]);
+                projectListRoot.getChildren().remove(selected);
+                projectList.getSelectionModel().selectFirst();
+                selectProject();
+            } else {
+                int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+                archiveDeliverable(delIndexParallel);
+                projectListRoot.getChildren().remove(selected);
+                TreeItem<String> parent = selected.getParent();
+                parent.getChildren().remove(selected);
+                projectList.getSelectionModel().select(parent);
+                selectProject();
             }
-        }
+        });
+    }
 
-        for (ArrayList<String> deliverable : deliverUnderProject) {
-            System.out.println(deliverable.toString());
+    private void addToTable(String name) {
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        int indexes[] = getSelectedIndex();
+
+        if (indexes[0] == -1) {
+            int leafIndex = 0;
+
+            if (deliverTable.getItems().size() == 0) {
+                leafIndex = 0;
+            } else {
+                leafIndex = deliverTable.getItems().size();
+            }
+
+            int deliverId = 0;
+
+            projectListRoot.getChildren().get(indexes[1]).getChildren().add(leafIndex,
+                    new TreeItem<String>(name));
+
+            deliverId = App.addDeliverable(projectIdArr.get(indexes[1]), name);
+            deliverableProjectIdArr.add(leafIndex, projectIdArr.get(indexes[1]));
+            deliverableIdArr.add(leafIndex, deliverId);
+            deliverableTitleArr.add(leafIndex, name);
+            deliverableDetailsArr.add(leafIndex, "Double Click to Edit");
+            deliverableStatusArr.add(leafIndex, "TODO");
+            deliverableLeadArr.add(leafIndex, "");
+            deliverableLeadIdArr.add(leafIndex, 0);
+            deliverableDueArr.add(leafIndex, new java.sql.Date((new java.util.Date()).getTime()));
+        } else {
+            int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+            int leafIndex = 0;
+
+            if (deliverTable.getItems().size() == 0) {
+                leafIndex = 0;
+            } else {
+                leafIndex = deliverTable.getItems().size();
+            }
+
+            int taskId = 0;
+
+            taskId = App.addTask(deliverableIdArr.get(delIndexParallel), name);
+            taskDeliverableIdArr.add(leafIndex, deliverableIdArr.get(delIndexParallel));
+            taskIdArr.add(leafIndex, taskId);
+            taskTitleArr.add(leafIndex, name);
+            taskDetailsArr.add(leafIndex, name);
+            taskStatusArr.add(leafIndex, "TODO");
+            taskDueArr.add(leafIndex, new java.sql.Date((new java.util.Date()).getTime()));
         }
-        return deliverUnderProject;
+        refreshTable();
     }
 
     public String dateToString(java.sql.Date date) {
@@ -794,26 +1086,17 @@ public class DashboardController implements Initializable {
         return archIdsRet;
     }
 
-    @FXML
-    public void editLead() {
-        System.out.println("Editing Lead");
-        int[] indexes = getSelectedIndex();
-        int delIndexParallel = getDelIndexInPar(indexes[0], indexes[1]);
-        int idOfArchs = 0;
-
-        Vector<ArrayList<Object>> archNames = new Vector<>();
-        archNames = App.getArchNames();
-
-        ArrayList<Integer> userIdParallel = archNamesToIdArr(archNames);
-        ArrayList<String> archNamesArr = archNamesToArr(archNames);
-        System.out.println(archNames);
-        System.out.println(archNamesArr);
+    private String getStatus() {
+        ArrayList<String> statuses = new ArrayList<>();
+        statuses.add("TODO");
+        statuses.add("ONGOING");
+        statuses.add("DONE");
 
         Dialog<Integer> dialogLead = new Dialog<>();
-        ComboBox<String> cbox = new ComboBox<String>(FXCollections.observableArrayList(archNamesArr));
-        dialogLead.setTitle("Set Deliverable Lead");
+        ComboBox<String> cbox = new ComboBox<String>(FXCollections.observableArrayList(statuses));
+        dialogLead.setTitle("CHANGE STATUS");
         dialogLead.setHeaderText(null);
-        dialogLead.setTitle("Choose Architect:");
+        dialogLead.setTitle("Status:");
         dialogLead.getDialogPane().setContent(cbox);
         dialogLead.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
         cbox.getSelectionModel().selectFirst();
@@ -826,22 +1109,14 @@ public class DashboardController implements Initializable {
         });
 
         Optional<Integer> result = dialogLead.showAndWait();
-
         if (result.isPresent()) {
             int index = Integer.valueOf(result.get());
-            String archName = archNamesArr.get(index);
-            deliverableLeadArr.set(delIndexParallel, archName);
-            deliverableLeadIdArr.set(delIndexParallel, userIdParallel.get(index));
-            lblLead.setText(archName);
-            App.updateDelLead(userIdParallel.get(index), deliverableIdArr.get(delIndexParallel));
+            return statuses.get(index);
         }
+        return "cancel";
     }
 
-    @FXML
-    public void editDueDate() {
-        int[] indexes = getSelectedIndex();
-        int delIndexParallel = getDelIndexInPar(indexes[0], indexes[1]);
-
+    private Optional<LocalDate> getDate() {
         Dialog<LocalDate> dialogDelDate = new Dialog<>();
         DatePicker datepicker = new DatePicker();
         datepicker.setValue((deliverableDueArr.get(delIndexParallel)).toLocalDate());
@@ -857,6 +1132,32 @@ public class DashboardController implements Initializable {
         });
 
         Optional<LocalDate> result = dialogDelDate.showAndWait();
+        return result;
+    }
+
+    @FXML
+    public void editTaskStatus() {
+        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+        int taskIndexPar = taskIdArr.indexOf(taskId);
+
+        String status = getStatus();
+
+        if (status != "cancel") {
+            taskStatusArr.set(taskIndexPar, status);
+            lblTaskStatus.setText(status);
+            colorStatus();
+            App.updateTaskStatus(status, taskId);
+            refreshTable();
+        }
+    }
+
+    @FXML
+    public void editTaskDue() {
+        int[] indexes = getSelectedIndex();
+        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+
+        Optional<LocalDate> result = getDate();
 
         if (result.isPresent()) {
             java.sql.Date date = java.sql.Date.valueOf(result.get());
@@ -864,6 +1165,46 @@ public class DashboardController implements Initializable {
             lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
             App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
         }
+    }
+
+    @FXML
+    public void editDelStatus() {
+        int[] indexes = getSelectedIndex();
+        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+        String status = getStatus();
+
+        if (status != "cancel") {
+            deliverableStatusArr.set(delIndexParallel, status);
+            lblStatus.setText(status);
+            colorStatus();
+            App.updateDelStatus(status, deliverableIdArr.get(delIndexParallel));
+        }
+    }
+
+    @FXML
+    public void editDueDate() {
+        int[] indexes = getSelectedIndex();
+        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+
+        Optional<LocalDate> result = getDate();
+
+        if (result.isPresent()) {
+            java.sql.Date date = java.sql.Date.valueOf(result.get());
+            deliverableDueArr.set(delIndexParallel, date);
+            lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
+            App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
+        }
+    }
+
+    private void selectTask() {
+        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+        int taskIndexPar = taskIdArr.indexOf(taskId);
+
+        taskTitle.setText(taskTitleArr.get(taskIndexPar));
+        taskDetails.setText(taskDetailsArr.get(taskIndexPar));
+        lblTaskStatus.setText(taskStatusArr.get(taskIndexPar));
+        colorStatus();
     }
 
     @FXML
@@ -910,6 +1251,8 @@ public class DashboardController implements Initializable {
             lblDue.setManaged(false);
             lblLead.setVisible(false);
             lblLead.setManaged(false);
+            lblStatus.setManaged(false);
+            lblStatus.setVisible(false);
             deliverCol.setText("Deliverable");
             deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
             deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
@@ -941,6 +1284,12 @@ public class DashboardController implements Initializable {
                     : deliverableLeadArr.get(delIndexParallel);
             lblLead.setText(leadName);
 
+            lblStatus.setVisible(true);
+            lblStatus.setManaged(true);
+            String status = deliverableStatusArr.get(delIndexParallel);
+            lblStatus.setText(status);
+            colorStatus();
+
             deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(3));
             deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(3));
             deliverDueCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(3));
@@ -960,6 +1309,18 @@ public class DashboardController implements Initializable {
                 System.out.println("Task Under Deliver Id: " + taskUnderDeliver.get(x).toArray(new String[0]));
             }
         }
+        taskTitle.setManaged(false);
+        taskDetails.setManaged(false);
+        taskDetailsArea.setManaged(false);
+        lblTaskStatus.setManaged(false);
+        lblTaskDue.setManaged(false);
+
+        taskTitle.setVisible(false);
+        taskDetails.setVisible(false);
+        taskDetailsArea.setVisible(false);
+        lblTaskStatus.setVisible(false);
+        lblTaskDue.setVisible(false);
+
         prevSelected = getSelectedIndex();
         prevSelectedPrimed = true;
     }
@@ -982,21 +1343,6 @@ public class DashboardController implements Initializable {
                 data.add(taskUnderDeliver.get(x).toArray(new String[0]));
             }
         }
-    }
-
-    private int getDeliverableIndex(int i) {
-        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-        int index = 0;
-
-        for (TreeItem<String> projectTreeItem : projectListRoot.getChildren()) {
-            if (projectTreeItem == selected) {
-                break;
-            }
-            for (TreeItem<String> deliverableTreeItem : projectTreeItem.getChildren()) {
-                index++;
-            }
-        }
-        return index + i;
     }
 
     private int[] getSelectedIndex() {
@@ -1037,6 +1383,7 @@ public class DashboardController implements Initializable {
     }
 
     private int getDelIndexInPar(int selectedIndex, int parentIndex) {
+        System.out.println(parentIndex);
         int projectId = projectIdArr.get(parentIndex);
 
         int index = 0;
@@ -1053,71 +1400,4 @@ public class DashboardController implements Initializable {
         return 0;
     }
 
-    @FXML
-    private void editTitleDouble(MouseEvent event) {
-        if (event.getClickCount() == 2) {
-            TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
-
-            TreeItem<String> selectedProjectParent = selectedProject.getParent();
-            if (selectedProjectParent == projectListRoot) {
-                TextInputDialog dialog = new TextInputDialog(projectTitle.getText());
-                dialog.setTitle("Change Project Name");
-                dialog.setHeaderText(null);
-                dialog.setContentText("Project Name:");
-                dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
-
-                Optional<String> result = dialog.showAndWait();
-                result.ifPresent(inpt -> changeProjectName(inpt));
-            } else {
-                TextInputDialog dialog = new TextInputDialog(selectedProject.getValue());
-                dialog.setTitle("Change Deliverable Name");
-                dialog.setHeaderText(null);
-                dialog.setContentText("Deliverable Name:");
-                dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
-
-                Optional<String> result = dialog.showAndWait();
-                result.ifPresent(inpt -> changeProjectName(inpt));
-            }
-        }
-    }
-
-    /**
-     * Helper to set table height based on content
-     *
-     * @param table        - the table in context
-     * @param rowHeight    - the height of a single row, alternatively could use
-     *                     table.fixedCellSizeProperty()
-     * @param headerHeight - the height of the table header
-     * @param margin       - a value for the margins
-     */
-    public void tableHeightHelper(TableView<?> table, int headerHeight, int margin) {
-        int rowHeight = table.getItems().size();
-        table.prefHeightProperty().bind(Bindings.max(2, Bindings.size(table.getItems()))
-                .multiply(rowHeight)
-                .add(headerHeight)
-                .add(margin));
-        table.minHeightProperty().bind(table.prefHeightProperty());
-        table.maxHeightProperty().bind(table.prefHeightProperty());
-    }
-
-    @FXML
-    private void editProjectDetails(MouseEvent event) {
-        if (event.getClickCount() == 2) {
-            Double layoutHeight = projectDetails.getHeight();
-            System.out.println("Project Details: " + projectDetails.getHeight());
-            System.out.println("Project Area: " + projectDetailsArea.getHeight());
-            mainVBox.getChildren().get(3).setVisible(false);
-            mainVBox.getChildren().get(3).setManaged(false);
-            mainVBox.getChildren().get(2).setVisible(true);
-            mainVBox.getChildren().get(2).setManaged(true);
-
-            projectDetailsArea.setText(projectDetails.getText());
-            projectDetailsArea.setMinHeight(layoutHeight + 20);
-            projectDetailsArea.setMaxHeight(layoutHeight + 20);
-            System.out.println("Project Details: " + projectDetails.getHeight());
-            System.out.println("Project Area: " + projectDetailsArea.getHeight());
-            projectDetailsArea.requestFocus();
-            mainScroll.setVvalue(mainScroll.getVmin());
-        }
-    }
 }

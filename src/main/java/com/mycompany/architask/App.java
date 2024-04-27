@@ -123,6 +123,34 @@ public class App extends Application {
         closeConnection();
     }
 
+    public static void updateDelStatus(String delStatus, int delId) {
+        openConnection();
+        String query = "UPDATE tbldeliverables SET deliverableStatus = ? WHERE deliverableId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, delStatus);
+            pst.setInt(2, delId);
+            int x = pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void updateTaskStatus(String taskStatus, int taskId) {
+        openConnection();
+        String query = "UPDATE tbltasks SET taskStatus = ? WHERE taskId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, taskStatus);
+            pst.setInt(2, taskId);
+            int x = pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
     public static void updateDelLead(int leadId, int delId) {
         openConnection();
         String query = "UPDATE tbldeliverables SET deliverableLead = ? WHERE deliverableId = ?";
@@ -131,7 +159,6 @@ public class App extends Application {
             pst.setInt(1, leadId);
             pst.setInt(2, delId);
             int x = pst.executeUpdate();
-            System.out.println("Num of affected rows: " + x + " delId: " + delId);
         } catch (SQLException err) {
             err.printStackTrace();
         }
@@ -411,6 +438,20 @@ public class App extends Application {
         closeConnection();
     }
 
+    public static void editTaskDetails(int taskId, String taskDetails) {
+        openConnection();
+        String query = "UPDATE tbltasks SET taskDetails = ? WHERE taskId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, taskDetails);
+            pst.setInt(2, taskId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
     public static void editDeliverableTitle(int deliverableId, String deliverableName) {
         openConnection();
         System.out.println(deliverableId);
@@ -420,6 +461,20 @@ public class App extends Application {
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setString(1, deliverableName);
             pst.setInt(2, deliverableId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void editTaskTitle(int taskId, String taskName) {
+        openConnection();
+        String query = "UPDATE tbltasks SET taskTitle = ? WHERE taskId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, taskName);
+            pst.setInt(2, taskId);
             pst.executeUpdate();
         } catch (SQLException err) {
             err.printStackTrace();
