@@ -13,6 +13,7 @@ import javafx.fxml.Initializable;
 import javafx.fxml.FXML;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
+import javafx.geometry.Pos;
 import javafx.scene.control.TreeView;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.control.TreeCell;
@@ -28,6 +29,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Text;
 import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
@@ -131,6 +133,12 @@ public class DashboardController implements Initializable {
     Label taskDetails;
     @FXML
     TextArea taskDetailsArea;
+    @FXML
+    ScrollPane chatScroll;
+    @FXML
+    HBox chatHBox;
+    @FXML
+    HBox chatTextHBox;
 
     /**
      * Initializes the controller class.
@@ -170,7 +178,10 @@ public class DashboardController implements Initializable {
         // ProjectList and ProjectDetails UI Setup
         projectList.setShowRoot(false);
         projectList.setRoot(projectListRoot);
-        // colorFolding();
+        projectList.setPrefWidth(200);
+        // former colorFolding(); changed to wrapfolding instead since changing the
+        // color or font style is too buggy
+        wrapFolding();
 
         projectTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
         taskTitle.wrappingWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
@@ -182,6 +193,11 @@ public class DashboardController implements Initializable {
         taskDetailsArea.setWrapText(true);
         projectDetailsArea.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
         taskDetailsArea.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+        chatHBox.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+        chatHBox.setAlignment(Pos.CENTER);
+        chatTextHBox.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+        chatTextHBox.setAlignment(Pos.CENTER);
+        chatScroll.prefWidthProperty().bind(mainScroll.widthProperty().divide(2));
 
         taskDetailsArea.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue) {
@@ -441,35 +457,27 @@ public class DashboardController implements Initializable {
         deliverTable.setMinHeight(200);
     }
 
-    // not yet fully functional
-    // private void colorFolding() {
-    // projectList.setCellFactory(tv -> new TreeCell<String>() {
-    // private Text text;
-    //
-    // @Override
-    // protected void updateItem(String item, boolean empty) {
-    // super.updateItem(item, empty);
-    // if (empty || item == null) {
-    // setText(null);
-    // setStyle("");
-    // } else {
-    // setText(item);
-    // TreeItem<String> currentItem = getTreeItem();
-    //
-    // if (currentItem.getParent() == projectListRoot) {
-    // setStyle("-fx-font-weight: bold");
-    // }
-    // if (text == null) {
-    // text = new Text();
-    // }
-    // text.setText(item);
-    // text.wrappingWidthProperty().bind(projectList.widthProperty().subtract(5));
-    // setGraphic(text);
-    // }
-    // }
-    // });
-    // }
-    //
+    // not yet fully functional used to be named color folding changed in favor of
+    // just wrapping
+    private void wrapFolding() {
+        projectList.setCellFactory(tv -> {
+            TreeCell<String> treeCell = new TreeCell<String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setStyle("");
+                    } else {
+                        setText(item);
+                    }
+                    setWrapText(true);
+                }
+            };
+            treeCell.prefWidthProperty().bind(projectList.widthProperty().subtract(5));
+            return treeCell;
+        });
+    }
 
     private void setupProjectTreeView() {
         ResultSet rs = App.getProjects();
@@ -928,7 +936,6 @@ public class DashboardController implements Initializable {
             taskDetailsArea.setMinHeight(layoutHeight + 20);
             taskDetailsArea.setMaxHeight(layoutHeight + 20);
             taskDetailsArea.requestFocus();
-            mainScroll.setVvalue(mainScroll.getVmin());
         }
     }
 
@@ -949,7 +956,7 @@ public class DashboardController implements Initializable {
             System.out.println("Project Details: " + projectDetails.getHeight());
             System.out.println("Project Area: " + projectDetailsArea.getHeight());
             projectDetailsArea.requestFocus();
-            mainScroll.setVvalue(mainScroll.getVmin());
+            // mainScroll.setVvalue(mainScroll.getVmin());
         }
     }
 
