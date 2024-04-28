@@ -1,5 +1,6 @@
 com\mycompany\architask\PrimaryController.class
 com\mycompany\architask\App.class
+com\mycompany\architask\QrCapture.class
 com\mycompany\architask\SecondaryController.class
 module-info.class
 com\mycompany\architask\DashboardController$1.class

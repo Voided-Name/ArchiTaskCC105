@@ -6,6 +6,7 @@ package com.mycompany.architask;
 
 import java.awt.event.ActionEvent;
 import java.io.IOException;
+import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.sql.*;
@@ -33,16 +34,24 @@ import javafx.scene.layout.HBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.Button;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Dialog;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.Image;
+import java.nio.file.*;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.ListView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.skin.DatePickerSkin;
 import javafx.stage.Popup;
+import javafx.stage.FileChooser;
+import javafx.stage.FileChooser.ExtensionFilter;
 import java.util.Vector;
 import javafx.util.Callback;
 import javafx.scene.control.TextInputDialog;
@@ -88,6 +97,7 @@ public class DashboardController implements Initializable {
     static ArrayList<String> taskDetailsArr = new ArrayList<String>();
     static ArrayList<String> taskStatusArr = new ArrayList<String>();
     static ArrayList<java.sql.Date> taskDueArr = new ArrayList<java.sql.Date>();
+    static Double imageMultiplier;
 
     // FXML IDs
     @FXML
@@ -135,11 +145,21 @@ public class DashboardController implements Initializable {
     @FXML
     TextArea taskDetailsArea;
     @FXML
-    ScrollPane chatScroll;
-    @FXML
     HBox chatHBox;
     @FXML
     HBox chatTextHBox;
+    @FXML
+    HBox chatBtnHBox;
+    @FXML
+    ImageView projectImageView;
+    @FXML
+    Button btnImage;
+    @FXML
+    ListView<String> chatList;
+    @FXML
+    TextField chatField;
+    @FXML
+    Label username;
 
     /**
      * Initializes the controller class.
@@ -148,6 +168,7 @@ public class DashboardController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         uiSetup();
         projectDetails.setWrapText(true);
+        username.setText(App.getUserNow());
         // try {
         // App.setResizable(true);
         // App.setMaximized(true);
@@ -177,10 +198,18 @@ public class DashboardController implements Initializable {
         // projectTitle.layoutBoundsProperty(),
         // deliverTable.heightProperty()));
 
+        // projectImage.fitWidthProperty().bind(mainScroll.prefWidthProperty().multiply(0.9));
+        if (projectImageView.getImage() == null) {
+            projectImageView.setVisible(false);
+            projectImageView.setManaged(false);
+        }
+        imageMultiplier = 1.0;
+
         // ProjectList and ProjectDetails UI Setup
         projectList.setShowRoot(false);
         projectList.setRoot(projectListRoot);
         projectList.setPrefWidth(200);
+
         // former colorFolding(); changed to wrapfolding instead since changing the
         // color or font style is too buggy
         wrapFolding();
@@ -191,6 +220,28 @@ public class DashboardController implements Initializable {
         taskDetails.prefWidthProperty().bind(mainVBox.widthProperty().multiply(0.9));
         line.widthProperty().bind(mainVBox.widthProperty().multiply(0.9));
 
+        mainScroll.widthProperty().addListener((obs, oldVal, newVal) -> {
+            System.out.println("ScrollPane Width: " + newVal);
+            if (mainScroll.widthProperty().multiply(0.7).get() > 900) {
+                projectImageView.setFitWidth(900);
+                projectImageView.setFitHeight(projectImageView.fitWidthProperty().get() * imageMultiplier);
+            } else {
+                projectImageView.setFitWidth(mainScroll.widthProperty().multiply(0.7).get());
+                projectImageView.setFitHeight(mainScroll.widthProperty().multiply(0.7).get() * imageMultiplier);
+            }
+            mainScroll.requestLayout();
+        });
+
+        line.widthProperty().addListener((obs, oldVal, newVal) -> {
+            System.out.println("Line Width: " + newVal);
+        });
+
+        projectImageView.fitWidthProperty().addListener((obs, oldVal, newVal) -> {
+            System.out.println("ImageView Fit Width: " + newVal);
+        });
+
+        // chat functionalty hidden, to be added if there is enough time
+
         projectDetailsArea.setWrapText(true);
         taskDetailsArea.setWrapText(true);
         projectDetailsArea.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
@@ -199,7 +250,9 @@ public class DashboardController implements Initializable {
         chatHBox.setAlignment(Pos.CENTER);
         chatTextHBox.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
         chatTextHBox.setAlignment(Pos.CENTER);
-        chatScroll.prefWidthProperty().bind(mainScroll.widthProperty().divide(2));
+        chatBtnHBox.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
+
+        chatList.prefWidthProperty().bind(mainScroll.widthProperty().divide(3));
 
         taskDetailsArea.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue) {
@@ -264,19 +317,17 @@ public class DashboardController implements Initializable {
                 int selectedIndex = indexes[1];
                 String text = projectDetailsArea.getText();
                 int indexOfLastChar = 0;
-                System.out.println("debug 1");
 
-                mainVBox.getChildren().get(3).setVisible(true);
-                mainVBox.getChildren().get(3).setManaged(true);
-                mainVBox.getChildren().get(2).setVisible(false);
-                mainVBox.getChildren().get(2).setManaged(false);
+                projectDetails.setVisible(true);
+                projectDetails.setManaged(true);
+                projectDetailsArea.setVisible(false);
+                projectDetailsArea.setManaged(false);
                 projectDetails.setText(projectDetailsArea.getText());
                 projectDetails.setWrapText(true);
 
                 if (projectList.getSelectionModel().getSelectedItem().getParent() == projectListRoot) {
                     projectDetailsArr.set(selectedIndex, projectDetails.getText());
                     App.editProjectDetails(projectIdArr.get(selectedIndex), projectDetails.getText());
-                    System.out.println("debug 4");
                 } else {
                     deliverableDetailsArr.set(selectedIndex, projectDetails.getText());
                     int delId = deliverableIdArr.get(getDelIndexInPar(indexes[1], indexes[0]));
@@ -292,7 +343,6 @@ public class DashboardController implements Initializable {
                 int selectedIndex = indexes[1];
                 String text = projectDetailsArea.getText();
                 int indexOfLastChar = 0;
-                System.out.println("debug 1");
 
                 if (event.getCode() == KeyCode.ENTER) {
                     for (int x = text.length() - 1; x > 0; x--) {
@@ -306,21 +356,17 @@ public class DashboardController implements Initializable {
 
                     projectDetailsArea.setText(text);
                 }
-                System.out.println("debug 2");
 
-                mainVBox.getChildren().get(3).setVisible(true);
-                mainVBox.getChildren().get(3).setManaged(true);
-                mainVBox.getChildren().get(2).setVisible(false);
-                mainVBox.getChildren().get(2).setManaged(false);
+                projectDetails.setVisible(true);
+                projectDetails.setManaged(true);
+                projectDetailsArea.setVisible(false);
+                projectDetailsArea.setManaged(false);
                 projectDetails.setText(projectDetailsArea.getText());
                 projectDetails.setWrapText(true);
-
-                System.out.println("debug 3");
 
                 if (projectList.getSelectionModel().getSelectedItem().getParent() == projectListRoot) {
                     projectDetailsArr.set(selectedIndex, projectDetails.getText());
                     App.editProjectDetails(projectIdArr.get(selectedIndex), projectDetails.getText());
-                    System.out.println("debug 4");
                 } else {
                     deliverableDetailsArr.set(selectedIndex, projectDetails.getText());
                     int delId = deliverableIdArr.get(getDelIndexInPar(indexes[1], indexes[0]));
@@ -336,15 +382,13 @@ public class DashboardController implements Initializable {
             }
 
         });
-        mainVBox.getChildren().get(2).setVisible(false);
-        mainVBox.getChildren().get(2).setManaged(false);
+        projectDetailsArea.setVisible(false);
+        projectDetailsArea.setManaged(false);
 
         deliverTable.setOnMouseClicked(event -> {
             TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-            System.out.println(selected.getParent());
 
             if (selected.getParent() != projectListRoot) {
-                System.out.println(deliverTable.getSelectionModel().getFocusedIndex());
                 if (deliverTable.getSelectionModel().getFocusedIndex() != -1) {
                     selectTask();
                 }
@@ -354,10 +398,8 @@ public class DashboardController implements Initializable {
         deliverTable.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
                 TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-                System.out.println(selected.getParent());
 
                 if (selected.getParent() != projectListRoot) {
-                    System.out.println(deliverTable.getSelectionModel().getFocusedIndex());
                     if (deliverTable.getSelectionModel().getFocusedIndex() != -1) {
                         taskTitle.setManaged(true);
                         taskDetails.setManaged(true);
@@ -374,6 +416,104 @@ public class DashboardController implements Initializable {
 
         setupProjectTreeView();
         getAllTasks();
+    }
+
+    private void saveImage(String name) {
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        int indexes[] = getSelectedIndex();
+
+        if (selected.getParent() == projectListRoot) {
+            int projectId = projectIdArr.get(indexes[1]);
+            projectImageArr.set(indexes[1], name);
+            App.editProjectImage(projectId, name);
+            updateImage();
+        }
+    }
+
+    private void updateImage() {
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        int indexes[] = getSelectedIndex();
+
+        if (selected.getParent() == projectListRoot) {
+            if (projectImageArr.get(indexes[1]) == "") {
+                btnImage.setManaged(true);
+                btnImage.setVisible(true);
+                projectImageView.setManaged(false);
+                projectImageView.setVisible(false);
+            } else {
+                System.out.println("This runs");
+                btnImage.setManaged(false);
+                btnImage.setVisible(false);
+                projectImageView.setManaged(true);
+                projectImageView.setVisible(true);
+
+                System.out.println(projectImageArr.get(indexes[1]));
+                Image image = new Image(
+                        "file:///C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/img/"
+                                + projectImageArr.get(indexes[1]));
+                if (image.isError()) {
+                    System.out.println(image.getException().getMessage());
+                    System.out.println(image.getException().getCause());
+
+                }
+                Double width = image.getWidth();
+                Double height = image.getHeight();
+                imageMultiplier = height / width;
+                System.out.println("Width: " + width);
+                System.out.println("Height: " + height);
+                System.out.println("Multiplier: " + imageMultiplier);
+
+                projectImageView.setPreserveRatio(false);
+                projectImageView.setImage(image);
+                // projectImageView.setFitWidth(mainScroll.widthProperty().multiply(0.7).get());
+
+                if (mainScroll.widthProperty().multiply(0.7).get() > 900) {
+                    projectImageView.setFitWidth(900);
+                    projectImageView.setFitHeight(projectImageView.fitWidthProperty().get() * imageMultiplier);
+                } else {
+                    projectImageView.setFitWidth(mainScroll.widthProperty().multiply(0.7).get());
+                    projectImageView.setFitHeight(mainScroll.widthProperty().multiply(0.7).get() * imageMultiplier);
+                }
+
+                mainScroll.requestLayout();
+            }
+        } else {
+            btnImage.setManaged(false);
+            btnImage.setVisible(false);
+            projectImageView.setManaged(false);
+            projectImageView.setVisible(false);
+        }
+    }
+
+    @FXML
+    private void setImage(MouseEvent event) {
+        FileChooser imageChoose = new FileChooser();
+        imageChoose.setTitle("Choose Project Image");
+        imageChoose.getExtensionFilters().addAll(new ExtensionFilter("Image Files", "*.png", "*.jpg"));
+        File selectedFile = imageChoose.showOpenDialog(projectImageView.getScene().getWindow());
+        if (selectedFile != null) {
+            try {
+                Path dest = new File(
+                        "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/img/"
+                                + selectedFile.getName())
+                        .toPath();
+                Files.copy(selectedFile.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+                projectImageView.setImage(new Image(dest.toUri().toString()));
+                if (!projectImageView.isVisible()) {
+                    projectImageView.setManaged(true);
+                    projectImageView.setVisible(true);
+                }
+                saveImage(selectedFile.getName());
+            } catch (IOException e) {
+                e.printStackTrace(); // Handle the case where the image could not be saved or loaded
+            }
+        }
+
+        projectImageView.setPreserveRatio(true);
+        Double width = projectImageView.getFitWidth();
+        Double height = projectImageView.getFitHeight();
+        imageMultiplier = width / height;
+        projectImageView.setPreserveRatio(false);
     }
 
     private void contextMenuSetup() {
@@ -503,7 +643,7 @@ public class DashboardController implements Initializable {
                 projectTitleArr.add(projectTitle);
                 projectIdArr.add(projectId);
                 projectDetailsArr.add(projectDetails);
-                projectImageArr.add(projectDetails);
+                projectImageArr.add(projectImage);
 
                 projectBranches.add(new TreeItem<String>(projectTitle));
             }
@@ -513,13 +653,11 @@ public class DashboardController implements Initializable {
 
         for (TreeItem<String> projectBranch : projectBranches) {
             projectListRoot.getChildren().add(projectBranch);
-            System.out.println("Added to projectListRoot: " + projectBranch);
         }
 
         rs = App.getDeliverables();
         try {
             ResultSetMetaData rsmd = rs.getMetaData();
-            System.out.println(rsmd.getColumnCount());
 
             while (rs.next()) {
                 deliverableProjectId = rs.getInt("projectId");
@@ -537,9 +675,7 @@ public class DashboardController implements Initializable {
                 deliverableStatusArr.add(deliverableStatus);
                 deliverableLeadIdArr.add(deliverableLeadId);
                 deliverableLeadArr.add(App.getLead(deliverableLeadId));
-                System.out.println(App.getLead(deliverableLeadId));
                 deliverableDueArr.add(deliverableDue);
-                System.out.println("Deliverable Title: " + deliverableTitle);
             }
         } catch (SQLException err) {
             err.printStackTrace();
@@ -548,17 +684,12 @@ public class DashboardController implements Initializable {
         if (deliverableIdArr.size() > 0) {
 
             int currentProjectId = deliverableProjectIdArr.get(0);
-            System.out.println("Current Project Id: " + currentProjectId);
 
             for (int x = 0; x < deliverableProjectIdArr.size(); x++) {
-                System.out.println(
-                        "Deliverable Project Id: " + deliverableProjectIdArr + ", Current Id: " + currentProjectId);
                 if (deliverableProjectIdArr.get(x) == currentProjectId) {
                     projectLeafsBuffer.add(new TreeItem<String>(deliverableTitleArr.get(x)));
-                    System.out.println("Added to Project Leafs Buffer " + deliverableTitleArr.get(x));
                 } else {
                     for (TreeItem<String> projectLeaf : projectLeafsBuffer) {
-                        System.out.println(projectIdArr);
                         projectBranches.get(projectIdArr.indexOf(currentProjectId)).getChildren().add(projectLeaf);
                     }
                     projectLeafsBuffer.clear();
@@ -568,9 +699,6 @@ public class DashboardController implements Initializable {
             }
 
             for (TreeItem<String> projectLeaf : projectLeafsBuffer) {
-                System.out.println("Current project id: " + currentProjectId);
-                System.out.println("Project leaf: " + projectLeaf);
-                System.out.println("Project IDs: " + projectIdArr);
                 projectBranches.get(projectIdArr.indexOf(currentProjectId)).getChildren().add(projectLeaf);
             }
         }
@@ -627,7 +755,6 @@ public class DashboardController implements Initializable {
         ResultSet rs = App.getTasks();
         try {
             ResultSetMetaData rsmd = rs.getMetaData();
-            System.out.println(rsmd.getColumnCount());
 
             while (rs.next()) {
                 taskDeliverableId = rs.getInt("deliverableid");
@@ -668,7 +795,6 @@ public class DashboardController implements Initializable {
         }
 
         for (ArrayList<String> task : taskUnderProject) {
-            System.out.println(task.toString());
         }
         return taskUnderProject;
     }
@@ -721,7 +847,6 @@ public class DashboardController implements Initializable {
 
     @FXML
     public void editLead() {
-        System.out.println("Editing Lead");
         int[] indexes = getSelectedIndex();
         int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
         int idOfArchs = 0;
@@ -731,8 +856,6 @@ public class DashboardController implements Initializable {
 
         ArrayList<Integer> userIdParallel = archNamesToIdArr(archNames);
         ArrayList<String> archNamesArr = archNamesToArr(archNames);
-        System.out.println(archNames);
-        System.out.println(archNamesArr);
 
         Dialog<Integer> dialogLead = new Dialog<>();
         ComboBox<String> cbox = new ComboBox<String>(FXCollections.observableArrayList(archNamesArr));
@@ -781,7 +904,6 @@ public class DashboardController implements Initializable {
         }
 
         for (ArrayList<String> deliverable : deliverUnderProject) {
-            System.out.println(deliverable.toString());
         }
         return deliverUnderProject;
     }
@@ -947,18 +1069,14 @@ public class DashboardController implements Initializable {
     private void editProjectDetails(MouseEvent event) {
         if (event.getClickCount() == 2) {
             Double layoutHeight = projectDetails.getHeight();
-            System.out.println("Project Details: " + projectDetails.getHeight());
-            System.out.println("Project Area: " + projectDetailsArea.getHeight());
-            mainVBox.getChildren().get(3).setVisible(false);
-            mainVBox.getChildren().get(3).setManaged(false);
-            mainVBox.getChildren().get(2).setVisible(true);
-            mainVBox.getChildren().get(2).setManaged(true);
+            projectDetails.setVisible(false);
+            projectDetails.setManaged(false);
+            projectDetailsArea.setVisible(true);
+            projectDetailsArea.setManaged(true);
 
             projectDetailsArea.setText(projectDetails.getText());
             projectDetailsArea.setMinHeight(layoutHeight + 20);
             projectDetailsArea.setMaxHeight(layoutHeight + 20);
-            System.out.println("Project Details: " + projectDetails.getHeight());
-            System.out.println("Project Area: " + projectDetailsArea.getHeight());
             projectDetailsArea.requestFocus();
             // mainScroll.setVvalue(mainScroll.getVmin());
         }
@@ -994,8 +1112,6 @@ public class DashboardController implements Initializable {
         Alert dialog = new Alert(AlertType.CONFIRMATION, "Delete " + msg + "(" + selected.getValue() + ")");
         dialog.showAndWait().ifPresent(response -> {
             if (indexes[0] == -1) {
-                System.out.println("Index id to delete: " + indexes[1]);
-                System.out.println("ProjectIdArr length: " + projectIdArr.size());
                 App.archiveProject(projectIdArr.get(indexes[1]));
                 projectIdArr.remove(indexes[1]);
                 projectTitleArr.remove(indexes[1]);
@@ -1167,9 +1283,22 @@ public class DashboardController implements Initializable {
             java.sql.Date date = java.sql.Date.valueOf(result.get());
             taskDueArr.set(taskIndexPar, date);
             lblTaskDue.setText(dateToString(taskDueArr.get(taskIndexPar)));
-            App.updateTaskDue(date, taskIndexPar);
+            App.updateTaskDue(date, taskId);
             refreshTable();
         }
+    }
+
+    @FXML
+    public void addChat() {
+        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+
+        String input = chatField.getText();
+        String chat = App.getUserNow() + ": " + input;
+
+        chatField.setText("");
+        chatList.getItems().add(chat);
+        App.addChat(taskId, chat);
     }
 
     @FXML
@@ -1206,6 +1335,16 @@ public class DashboardController implements Initializable {
         int taskId = Integer.parseInt((data.get(taskIndex))[0]);
         int taskIndexPar = taskIdArr.indexOf(taskId);
 
+        chatHBox.setManaged(true);
+        chatHBox.setVisible(true);
+        chatTextHBox.setManaged(true);
+        chatTextHBox.setVisible(true);
+        chatBtnHBox.setManaged(true);
+        chatBtnHBox.setVisible(true);
+
+        chatList.getItems().clear();
+        chatList.getItems().addAll(App.getChats(taskId));
+
         taskTitle.setText(taskTitleArr.get(taskIndexPar));
         taskDetails.setText(taskDetailsArr.get(taskIndexPar));
         lblTaskStatus.setText(taskStatusArr.get(taskIndexPar));
@@ -1215,15 +1354,13 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void selectProject() {
-        System.out.println(projectListRoot.getChildren().size());
         if (projectListRoot.getChildren().size() == 0) {
-            System.out.println("should be false");
             mainVBox.setVisible(false);
             return;
         } else {
             mainVBox.setVisible(true);
         }
-        if (mainVBox.getChildren().get(2).isVisible()) {
+        if (projectDetailsArea.isVisible()) {
             if (prevSelectedPrimed) {
                 int[] indexes = prevSelected;
                 int selectedIndex = indexes[1];
@@ -1252,6 +1389,13 @@ public class DashboardController implements Initializable {
         int selectedIndexParent = indexes[0];
         int selectedIndex = indexes[1];
 
+        chatHBox.setManaged(false);
+        chatHBox.setVisible(false);
+        chatTextHBox.setManaged(false);
+        chatTextHBox.setVisible(false);
+        chatBtnHBox.setManaged(false);
+        chatBtnHBox.setVisible(false);
+
         if (selectedIndexParent == -1) {
             lblDue.setVisible(false);
             lblDue.setManaged(false);
@@ -1267,6 +1411,7 @@ public class DashboardController implements Initializable {
             if (deliverTable.getColumns().size() < 5) {
                 deliverTable.getColumns().add(deliverLeadCol);
             }
+            updateImage();
 
             ArrayList<ArrayList<String>> deliverUnderProject = getDeliverablesUnderProject(selectedIndex);
             String[][] buffer;
@@ -1289,6 +1434,7 @@ public class DashboardController implements Initializable {
             String leadName = (deliverableLeadArr.get(delIndexParallel).equals("")) ? "Lead Name"
                     : deliverableLeadArr.get(delIndexParallel);
             lblLead.setText(leadName);
+            updateImage();
 
             lblStatus.setVisible(true);
             lblStatus.setManaged(true);
@@ -1312,7 +1458,6 @@ public class DashboardController implements Initializable {
 
             for (int x = 0; x < taskUnderDeliver.size(); x++) {
                 data.add(taskUnderDeliver.get(x).toArray(new String[0]));
-                System.out.println("Task Under Deliver Id: " + taskUnderDeliver.get(x).toArray(new String[0]));
             }
         }
         taskTitle.setManaged(false);
@@ -1389,7 +1534,6 @@ public class DashboardController implements Initializable {
     }
 
     private int getDelIndexInPar(int selectedIndex, int parentIndex) {
-        System.out.println(parentIndex);
         int projectId = projectIdArr.get(parentIndex);
 
         int index = 0;

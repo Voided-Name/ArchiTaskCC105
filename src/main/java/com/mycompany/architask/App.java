@@ -154,6 +154,9 @@ public class App extends Application {
     public static void updateTaskDue(java.sql.Date taskDue, int taskId) {
         openConnection();
         String query = "UPDATE tbltasks SET taskDue = ? WHERE taskId = ?";
+        System.out.println(query);
+        System.out.println(taskDue);
+        System.out.println(taskId);
         try {
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setDate(1, taskDue);
@@ -428,6 +431,50 @@ public class App extends Application {
         try {
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setString(1, projectName);
+            pst.setInt(2, projectId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static ArrayList<String> getChats(int taskId) {
+        ArrayList<String> messages = new ArrayList<>();
+        openConnection();
+        String query = "SELECT message FROM tbltaskschats WHERE taskId = ? ORDER BY id";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, taskId);
+            ResultSet rs = pst.executeQuery();
+            while (rs.next()) {
+                messages.add(rs.getString("message"));
+            }
+        } catch (SQLException err) {
+        }
+        closeConnection();
+        return messages;
+    }
+
+    public static void addChat(int taskId, String chat) {
+        openConnection();
+        String query = "INSERT INTO tbltaskschats (taskId, message) VALUES (?, ?)";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, taskId);
+            pst.setString(2, chat);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+        }
+        closeConnection();
+    }
+
+    public static void editProjectImage(int projectId, String imageName) {
+        openConnection();
+        String query = "Update tblprojectinfo SET projectImage = ? WHERE projectId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, imageName);
             pst.setInt(2, projectId);
             pst.executeUpdate();
         } catch (SQLException err) {
