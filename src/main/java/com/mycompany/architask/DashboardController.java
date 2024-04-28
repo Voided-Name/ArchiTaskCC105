@@ -84,6 +84,7 @@ public class DashboardController implements Initializable {
     static ArrayList<String> deliverableLeadArr = new ArrayList<String>();
     static ArrayList<Integer> deliverableLeadIdArr = new ArrayList<Integer>();
     static ArrayList<java.sql.Date> deliverableDueArr = new ArrayList<java.sql.Date>();
+    static ArrayList<java.sql.Date> projectDueArr = new ArrayList<java.sql.Date>();
     static ArrayList<String> deliverableArchsArr = new ArrayList<String>();
     static ArrayList<Integer> newProjectIds = new ArrayList<Integer>();
     static ObservableList<String[]> data = FXCollections.observableArrayList();
@@ -629,7 +630,7 @@ public class DashboardController implements Initializable {
         String projectTitle, projectDetails, projectImage, deliverableTitle, deliverableDetails, deliverableStatus,
                 deliverableLead;
         String[] rowBuffer;
-        java.sql.Date deliverableDue;
+        java.sql.Date deliverableDue, projectDue;
 
         try {
             while (rs.next()) {
@@ -638,12 +639,14 @@ public class DashboardController implements Initializable {
                 projectTitle = rs.getString("projectTitle");
                 projectDetails = rs.getString("projectDetails");
                 projectImage = rs.getString("projectImage");
+                projectDue = rs.getDate("projectDue");
 
                 // parallel arrays for reference
                 projectTitleArr.add(projectTitle);
                 projectIdArr.add(projectId);
                 projectDetailsArr.add(projectDetails);
                 projectImageArr.add(projectImage);
+                projectDueArr.add(projectDue);
 
                 projectBranches.add(new TreeItem<String>(projectTitle));
             }
@@ -938,6 +941,7 @@ public class DashboardController implements Initializable {
         projectTitleArr.add(projectName);
         projectDetailsArr.add("Double Click to Edit");
         projectImageArr.add("");
+        projectDueArr.add(new java.sql.Date((new java.util.Date()).getTime()));
     }
 
     private void changeProjectName(String projectName) {
@@ -1269,6 +1273,7 @@ public class DashboardController implements Initializable {
             App.updateTaskStatus(status, taskId);
             refreshTable();
         }
+        deliverTable.getSelectionModel().select(taskIndex);
     }
 
     @FXML
@@ -1286,6 +1291,7 @@ public class DashboardController implements Initializable {
             App.updateTaskDue(date, taskId);
             refreshTable();
         }
+        deliverTable.getSelectionModel().select(taskIndex);
     }
 
     @FXML
@@ -1299,6 +1305,21 @@ public class DashboardController implements Initializable {
         chatField.setText("");
         chatList.getItems().add(chat);
         App.addChat(taskId, chat);
+    }
+
+    @FXML
+    public void addChatEnter(javafx.scene.input.KeyEvent event) {
+        if (event.getCode() == KeyCode.ENTER) {
+            int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+            int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+
+            String input = chatField.getText();
+            String chat = App.getUserNow() + ": " + input;
+
+            chatField.setText("");
+            chatList.getItems().add(chat);
+            App.addChat(taskId, chat);
+        }
     }
 
     @FXML
@@ -1318,15 +1339,25 @@ public class DashboardController implements Initializable {
     @FXML
     public void editDueDate() {
         int[] indexes = getSelectedIndex();
-        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+        if (indexes[0] == -1) {
+            Optional<LocalDate> result = getDate(projectDueArr.get(indexes[1]));
+            if (result.isPresent()) {
+                java.sql.Date date = java.sql.Date.valueOf(result.get());
+                projectDueArr.set(indexes[1], date);
+                lblDue.setText(dateToString(projectDueArr.get(indexes[1])));
+                App.updateProjectDue(date, projectIdArr.get(indexes[1]));
+            }
+        } else {
+            int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
 
-        Optional<LocalDate> result = getDate(deliverableDueArr.get(delIndexParallel));
+            Optional<LocalDate> result = getDate(deliverableDueArr.get(delIndexParallel));
 
-        if (result.isPresent()) {
-            java.sql.Date date = java.sql.Date.valueOf(result.get());
-            deliverableDueArr.set(delIndexParallel, date);
-            lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
-            App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
+            if (result.isPresent()) {
+                java.sql.Date date = java.sql.Date.valueOf(result.get());
+                deliverableDueArr.set(delIndexParallel, date);
+                lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
+                App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
+            }
         }
     }
 
@@ -1335,6 +1366,10 @@ public class DashboardController implements Initializable {
         int taskId = Integer.parseInt((data.get(taskIndex))[0]);
         int taskIndexPar = taskIdArr.indexOf(taskId);
 
+        lblTaskDue.setManaged(true);
+        lblTaskDue.setVisible(true);
+        lblTaskStatus.setManaged(true);
+        lblTaskStatus.setVisible(true);
         chatHBox.setManaged(true);
         chatHBox.setVisible(true);
         chatTextHBox.setManaged(true);
@@ -1397,12 +1432,11 @@ public class DashboardController implements Initializable {
         chatBtnHBox.setVisible(false);
 
         if (selectedIndexParent == -1) {
-            lblDue.setVisible(false);
-            lblDue.setManaged(false);
             lblLead.setVisible(false);
             lblLead.setManaged(false);
             lblStatus.setManaged(false);
             lblStatus.setVisible(false);
+            lblDue.setText(dateToString(projectDueArr.get(indexes[1])));
             deliverCol.setText("Deliverable");
             deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
             deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));

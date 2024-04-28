@@ -37,47 +37,6 @@ public class App extends Application {
         stage.setMaximized(false);
     }
 
-    public static void saveToSQL(ArrayList<Integer> projectIdArr, ArrayList<String> projectTitleArr,
-            ArrayList<String> projectDetailsArr, ArrayList<String> projectImageArr) {
-        openConnection();
-
-        for (int x = 0; x < projectIdArr.size(); x++) {
-            String query = "UPDATE tblprojectinfo SET projectTitle = ?, projectDetails = ?, projectImage = ? WHERE projectId = ?";
-            System.out.println("Query: " + projectTitleArr.get(x) + ", " + projectDetailsArr.get(x) + ", "
-                    + projectImageArr.get(x));
-
-            try {
-                PreparedStatement pst = conn.prepareStatement(query);
-                pst.setString(1, projectTitleArr.get(x));
-                pst.setString(2, projectDetailsArr.get(x));
-                pst.setString(3, projectImageArr.get(x));
-                pst.setInt(4, projectIdArr.get(x));
-                pst.executeUpdate();
-            } catch (SQLException err) {
-                err.printStackTrace();
-            }
-        }
-
-        for (int x = 0; x < projectIdArr.size(); x++) {
-            String query = "UPDATE tbldeliverables SET projectTitle = ?, projectDetails = ?, projectImage = ? WHERE projectId = ?";
-            System.out.println("Query: " + projectTitleArr.get(x) + ", " + projectDetailsArr.get(x) + ", "
-                    + projectImageArr.get(x));
-
-            try {
-                PreparedStatement pst = conn.prepareStatement(query);
-                pst.setString(1, projectTitleArr.get(x));
-                pst.setString(2, projectDetailsArr.get(x));
-                pst.setString(3, projectImageArr.get(x));
-                pst.setInt(4, projectIdArr.get(x));
-                pst.executeUpdate();
-            } catch (SQLException err) {
-                err.printStackTrace();
-            }
-        }
-
-        closeConnection();
-    }
-
     // cursor functions
     static void cursorHand() {
         scene.setCursor(Cursor.HAND);
@@ -117,6 +76,20 @@ public class App extends Application {
             pst.setInt(2, delId);
             int x = pst.executeUpdate();
             System.out.println("Num of affected rows: " + x + " delId: " + delId);
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void updateProjectDue(java.sql.Date due, int projectId) {
+        openConnection();
+        String query = "UPDATE tblprojectinfo SET projectDue = ? WHERE projectId = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setDate(1, due);
+            pst.setInt(2, projectId);
+            int x = pst.executeUpdate();
         } catch (SQLException err) {
             err.printStackTrace();
         }
@@ -208,18 +181,20 @@ public class App extends Application {
             String projectTitle = rsSelect.getString("projectTitle");
             String projectDetails = rsSelect.getString("projectDetails");
             String projectImage = rsSelect.getString("projectImage");
+            java.sql.Date projectDue = rsSelect.getDate("projectDue");
 
             query = "DELETE FROM tblprojectinfo WHERE projectid = ?";
             pst = conn.prepareStatement(query);
             pst.setInt(1, projectId);
             pst.executeUpdate();
 
-            query = "INSERT INTO tblprojectinfoarchive (projectid, projecttitle, projectdetails, projectimage) VALUES (?, ?, ?, ?)";
+            query = "INSERT INTO tblprojectinfoarchive (projectid, projecttitle, projectdetails, projectimage, projectdue) VALUES (?, ?, ?, ?, ?)";
             pst = conn.prepareStatement(query);
             pst.setInt(1, projectId);
             pst.setString(2, projectTitle);
             pst.setString(3, projectDetails);
             pst.setString(4, projectImage);
+            pst.setDate(5, projectDue);
             pst.executeUpdate();
         } catch (SQLException err) {
             err.printStackTrace();
@@ -314,7 +289,7 @@ public class App extends Application {
         openConnection();
         int newId = 0;
 
-        String query = "INSERT INTO tblprojectinfo (projectTitle, projectDetails, projectImage) VALUES (?, 'Double Click to Edit', '')";
+        String query = "INSERT INTO tblprojectinfo (projectTitle, projectDetails, projectImage, projectDue) VALUES (?, 'Double Click to Edit', '', NOW())";
         try {
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setString(1, projectName);
@@ -610,15 +585,11 @@ public class App extends Application {
         openConnection();
         ResultSet rs = null;
         if (userTypeNow == 0) {
-            String query = "SELECT projectId, projectTitle, projectDetails, projectImage FROM tblprojectinfo";
+            String query = "SELECT projectId, projectTitle, projectDetails, projectImage, projectDue FROM tblprojectinfo";
 
             try {
                 PreparedStatement stmt = conn.prepareStatement(query);
                 rs = stmt.executeQuery();
-                if (rs.isBeforeFirst()) {
-                    System.out.println("non empty result set\n\n\n");
-                }
-
             } catch (SQLException err) {
                 err.printStackTrace();
             }

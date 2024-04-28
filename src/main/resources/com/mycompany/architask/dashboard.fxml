@@ -158,7 +158,7 @@
                   </HBox>
                   <HBox fx:id="chatTextHBox" alignment="CENTER" prefHeight="65.0" prefWidth="370.0" spacing="10.0">
                      <children>
-                        <TextField fx:id="chatField" prefHeight="41.0" prefWidth="370.0" />
+                        <TextField fx:id="chatField" prefHeight="41.0" prefWidth="370.0" onKeyPressed="#addChatEnter"/>
                      </children>
                   </HBox>
                   <HBox fx:id="chatBtnHBox" alignment="CENTER" prefHeight="34.0" prefWidth="370.0" spacing="10.0">
