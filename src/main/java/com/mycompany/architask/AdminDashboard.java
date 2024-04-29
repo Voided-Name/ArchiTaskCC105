@@ -4,7 +4,9 @@
  */
 package com.mycompany.architask;
 
+import javafx.scene.control.ContextMenu;
 import javafx.fxml.FXML;
+import javafx.scene.control.MenuItem;
 import javafx.fxml.Initializable;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -13,6 +15,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TableColumn;
+import java.io.IOException;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.TableCell;
 import java.util.ArrayList;
@@ -21,6 +24,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ButtonType;
+import java.io.File;
 import java.util.Optional;
 
 /**
@@ -170,6 +174,30 @@ public class AdminDashboard implements Initializable {
       data.clear();
       fillAdminTable();
     }
+
+    ContextMenu usernameMenu = new ContextMenu();
+    MenuItem logout = new MenuItem("Log Out");
+    usernameMenu.getItems().add(logout);
+    adminTable.setContextMenu(usernameMenu);
+
+    logout.setOnAction((event) -> {
+      try {
+        data.clear();
+
+        File remFile = new File(
+            "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/Generated/"
+                + "remFile.txt");
+        if (remFile.exists()) {
+          remFile.delete();
+        }
+
+        App.setRoot("login");
+        App.setResizable(false);
+        App.setSceneSize(600, 400);
+      } catch (IOException err) {
+        err.printStackTrace();
+      }
+    });
   }
 
   @FXML

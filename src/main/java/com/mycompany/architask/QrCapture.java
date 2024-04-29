@@ -12,11 +12,14 @@ package com.mycompany.architask;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.image.BufferedImage;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 
 import com.github.sarxos.webcam.Webcam;
@@ -38,9 +41,18 @@ public class QrCapture extends JFrame implements Runnable, ThreadFactory {
 
 	private Webcam webcam = null;
 	private WebcamPanel panel = null;
+	private boolean running = true;
 
 	public QrCapture() {
 		super();
+		this.addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				running = false;
+				if (webcam != null && webcam.isOpen()) {
+					webcam.close();
+				}
+			}
+		});
 
 		setLayout(new FlowLayout());
 		setTitle("Read QR / Bar Code With Webcam");
@@ -65,7 +77,6 @@ public class QrCapture extends JFrame implements Runnable, ThreadFactory {
 
 	@Override
 	public void run() {
-
 		do {
 			try {
 				Thread.sleep(100);
@@ -99,7 +110,7 @@ public class QrCapture extends JFrame implements Runnable, ThreadFactory {
 				break;
 			}
 
-		} while (true);
+		} while (running);
 
 		if (webcam != null && webcam.isOpen()) {
 			webcam.close();

@@ -80,7 +80,7 @@
                   </Label>
                   <HBox prefHeight="62.0" prefWidth="370.0" spacing="20.0">
                      <children>
-                        <Label fx:id="lblDue" onMouseClicked="#editDueDate" style="-fx-border-color: #e8b631; -fx-border-radius: 10; -fx-background-color: wh #EFF9F0te;" text="duedate" textFill="#0a2342" wrapText="true">
+                        <Label fx:id="lblDue" onMouseClicked="#editDueDate" style="-fx-border-color: #e8b631; -fx-border-radius: 10; -fx-background-color: #EFF9F0;" text="duedate" textFill="#0a2342" wrapText="true">
                            <font>
                               <Font size="35.0" />
                            </font>
@@ -135,7 +135,7 @@
                   </Label>
                   <HBox prefHeight="62.0" prefWidth="370.0" spacing="20.0">
                      <children>
-                        <Label fx:id="lblTaskDue" onMouseClicked="#editTaskDue" style="-fx-border-color: #e8b631; -fx-border-radius: 10; -fx-background-color: w #EFF9F0ite;" text="duedate" textFill="#0a2342" wrapText="true">
+                        <Label fx:id="lblTaskDue" onMouseClicked="#editTaskDue" style="-fx-border-color: #e8b631; -fx-border-radius: 10; -fx-background-color: #EFF9F0;" text="duedate" textFill="#0a2342" wrapText="true">
                            <font>
                               <Font size="35.0" />
                            </font>

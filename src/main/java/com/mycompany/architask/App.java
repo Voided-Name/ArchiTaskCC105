@@ -1,6 +1,8 @@
 package com.mycompany.architask;
 
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.stage.WindowEvent;
 import java.util.Vector;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -17,6 +19,12 @@ import javafx.scene.Cursor;
 import java.util.ArrayList;
 import org.mindrot.jbcrypt.BCrypt;
 import java.io.IOException;
+import java.awt.event.*;
+import javafx.event.EventHandler;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Alert.AlertType;
 
 /**
  * JavaFX App
@@ -25,9 +33,10 @@ public class App extends Application {
 
     private static Scene scene;
     private static Connection conn;
-    private static String userNow = "NaeBerber";
-    private static int userTypeNow = 0;
-    private static int userId = 1;
+    private static String userNow;
+    private static int userTypeNow;
+    private static int userId;
+    public static int guestProjectId;
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -38,6 +47,25 @@ public class App extends Application {
         stage.getIcons()
                 .add(new Image(App.class.getResourceAsStream("/img/logo_2.jpg")));
         stage.setMaximized(false);
+
+        stage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+            @Override
+            public void handle(WindowEvent event) {
+                event.consume();
+
+                Alert alert = new Alert(AlertType.CONFIRMATION);
+                alert.setTitle("Confirmation");
+                alert.setHeaderText("Are you sure you want to exit?");
+                alert.setContentText("Press OK to exit, or Cancel to stay.");
+
+                alert.showAndWait().ifPresent(response -> {
+                    if (response == ButtonType.OK) {
+                        stage.close();
+                        System.exit(0);
+                    }
+                });
+            }
+        });
     }
 
     public static int getUserType() {
@@ -50,7 +78,6 @@ public class App extends Application {
     }
 
     public static Vector<ArrayList<Object>> getArchNames() {
-        // TODO check access to project first
         Vector<ArrayList<Object>> archNames = new Vector<>();
         openConnection();
         try {
@@ -655,11 +682,40 @@ public class App extends Application {
         return rs;
     }
 
+    static ResultSet getGuestProjects() {
+        openConnection();
+        ResultSet rs = null;
+        String query = "SELECT projectId, projectTitle, projectDetails, projectImage, projectDue FROM tblprojectinfo WHERE projectId = ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(query);
+            stmt.setInt(1, guestProjectId);
+            rs = stmt.executeQuery();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        return rs;
+    }
+
     static ResultSet getDeliverables() {
         ResultSet rs = null;
         String query = "SELECT projectId, deliverableId, deliverableTitle, deliverableDetails, deliverableStatus, deliverableLead, deliverableDue FROM tbldeliverables ORDER BY projectId";
         try {
             PreparedStatement stmt = conn.prepareStatement(query);
+            rs = stmt.executeQuery();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        return rs;
+    }
+
+    static ResultSet getGuestDeliverables() {
+        ResultSet rs = null;
+        String query = "SELECT projectId, deliverableId, deliverableTitle, deliverableDetails, deliverableStatus, deliverableLead, deliverableDue FROM tbldeliverables WHERE projectId = ?";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(query);
+            stmt.setInt(1, guestProjectId);
             rs = stmt.executeQuery();
         } catch (SQLException err) {
             err.printStackTrace();
@@ -682,6 +738,33 @@ public class App extends Application {
         return rs;
     }
 
+    static void rememberMe(String username) {
+        openConnection();
+        try {
+            String query = "SELECT id, utype FROM tbluseraccount WHERE username = ?";
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, username);
+            ResultSet rs = pst.executeQuery();
+            if (rs.isBeforeFirst()) {
+                currentUser(username);
+
+                Platform.runLater(() -> {
+                    try {
+                        App.setMaximized(true);
+                        App.setResizable(true);
+                        setRoot("dashboard");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        closeConnection();
+    }
+
     static void sendQr(String qrData) {
         System.out.println(qrData);
         openConnection();
@@ -691,12 +774,19 @@ public class App extends Application {
             pst.setString(1, qrData);
             ResultSet rs = pst.executeQuery();
             if (rs.isBeforeFirst()) {
-                try {
-                    setRoot("dashboard");
-                    userTypeNow = 3;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                rs.next();
+                guestProjectId = rs.getInt("projectId");
+                userTypeNow = 3;
+                userNow = "Guest";
+                Platform.runLater(() -> {
+                    try {
+                        App.setMaximized(true);
+                        App.setResizable(true);
+                        setRoot("dashboard");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
             }
         } catch (SQLException err) {
             err.printStackTrace();
@@ -709,7 +799,7 @@ public class App extends Application {
         System.out.println(projectId);
         System.out.println(qrData);
         openConnection();
-        String query = "UPDATE TABLE tblprojectinfo SET projectQr = ? WHERE = ?";
+        String query = "UPDATE tblprojectinfo SET projectQr = ? WHERE projectId = ?";
         try {
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setString(1, qrData);

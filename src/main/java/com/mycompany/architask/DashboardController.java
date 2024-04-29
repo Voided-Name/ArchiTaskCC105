@@ -111,6 +111,8 @@ public class DashboardController implements Initializable {
     static ArrayList<String> taskStatusArr = new ArrayList<String>();
     static ArrayList<java.sql.Date> taskDueArr = new ArrayList<java.sql.Date>();
     static Double imageMultiplier;
+    static int userType;
+    static int guestProjectId;
 
     // FXML IDs
     @FXML
@@ -181,6 +183,13 @@ public class DashboardController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        try {
+            App.setResizable(true);
+            App.setMaximized(true);
+        } catch (IOException err) {
+            err.printStackTrace();
+        }
+        userType = App.getUserType();
         uiSetup();
         projectDetails.setWrapText(true);
         username.setText(App.getUserNow());
@@ -203,17 +212,6 @@ public class DashboardController implements Initializable {
         contextMenuSetup();
         tableSetup();
 
-        // VBox min height
-        // mainVBox.minHeightProperty()
-        // .bind(Bindings.createDoubleBinding(
-        // () -> projectDetailsArea.getHeight() +
-        // projectTitle.getLayoutBounds().getHeight()
-        // + deliverTable.getHeight(),
-        // projectDetailsArea.heightProperty(),
-        // projectTitle.layoutBoundsProperty(),
-        // deliverTable.heightProperty()));
-
-        // projectImage.fitWidthProperty().bind(mainScroll.prefWidthProperty().multiply(0.9));
         if (projectImageView.getImage() == null) {
             projectImageView.setVisible(false);
             projectImageView.setManaged(false);
@@ -246,16 +244,6 @@ public class DashboardController implements Initializable {
             }
             mainScroll.requestLayout();
         });
-
-        line.widthProperty().addListener((obs, oldVal, newVal) -> {
-            // System.out.println("Line Width: " + newVal);
-        });
-
-        projectImageView.fitWidthProperty().addListener((obs, oldVal, newVal) -> {
-            // System.out.println("ImageView Fit Width: " + newVal);
-        });
-
-        // chat functionalty hidden, to be added if there is enough time
 
         projectDetailsArea.setWrapText(true);
         taskDetailsArea.setWrapText(true);
@@ -353,6 +341,7 @@ public class DashboardController implements Initializable {
                 taskDetailsArea.positionCaret(caretPosition + 1);
             }
         });
+
         projectDetailsArea.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue) {
                 int[] indexes = getSelectedIndex();
@@ -379,6 +368,7 @@ public class DashboardController implements Initializable {
                 projectDetailsArea.positionCaret(projectDetailsArea.getText().length());
             }
         });
+
         projectDetailsArea.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.ESCAPE || (event.getCode() == KeyCode.ENTER) && !event.isShiftDown()) {
                 int[] indexes = getSelectedIndex();
@@ -406,7 +396,7 @@ public class DashboardController implements Initializable {
                 projectDetails.setText(projectDetailsArea.getText());
                 projectDetails.setWrapText(true);
 
-                if (projectList.getSelectionModel().getSelectedItem().getParent() == projectListRoot) {
+                if (indexes[0] == -1) {
                     projectDetailsArr.set(selectedIndex, projectDetails.getText());
                     App.editProjectDetails(projectIdArr.get(selectedIndex), projectDetails.getText());
                 } else {
@@ -424,6 +414,7 @@ public class DashboardController implements Initializable {
             }
 
         });
+
         projectDetailsArea.setVisible(false);
         projectDetailsArea.setManaged(false);
 
@@ -479,6 +470,7 @@ public class DashboardController implements Initializable {
             File file = new File(filePath);
             MatrixToImageWriter.writeToPath(bitMatrix, "PNG", file.toPath());
             System.out.println("QR code generated and saved to " + file.getAbsolutePath());
+            System.out.println("pppppppppppppppppppppppppppppppppppppp");
             App.setQr(projectId, qrCodeContent);
             Desktop.getDesktop().open(new File(filePath));
         } catch (WriterException e) {
@@ -557,33 +549,35 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void setImage(MouseEvent event) {
-        FileChooser imageChoose = new FileChooser();
-        imageChoose.setTitle("Choose Project Image");
-        imageChoose.getExtensionFilters().addAll(new ExtensionFilter("Image Files", "*.png", "*.jpg"));
-        File selectedFile = imageChoose.showOpenDialog(projectImageView.getScene().getWindow());
-        if (selectedFile != null) {
-            try {
-                Path dest = new File(
-                        "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/img/"
-                                + selectedFile.getName())
-                        .toPath();
-                Files.copy(selectedFile.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
-                projectImageView.setImage(new Image(dest.toUri().toString()));
-                if (!projectImageView.isVisible()) {
-                    projectImageView.setManaged(true);
-                    projectImageView.setVisible(true);
+        if (userType == 0) {
+            FileChooser imageChoose = new FileChooser();
+            imageChoose.setTitle("Choose Project Image");
+            imageChoose.getExtensionFilters().addAll(new ExtensionFilter("Image Files", "*.png", "*.jpg"));
+            File selectedFile = imageChoose.showOpenDialog(projectImageView.getScene().getWindow());
+            if (selectedFile != null) {
+                try {
+                    Path dest = new File(
+                            "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/img/"
+                                    + selectedFile.getName())
+                            .toPath();
+                    Files.copy(selectedFile.toPath(), dest, StandardCopyOption.REPLACE_EXISTING);
+                    projectImageView.setImage(new Image(dest.toUri().toString()));
+                    if (!projectImageView.isVisible()) {
+                        projectImageView.setManaged(true);
+                        projectImageView.setVisible(true);
+                    }
+                    saveImage(selectedFile.getName());
+                } catch (IOException e) {
+                    e.printStackTrace(); // Handle the case where the image could not be saved or loaded
                 }
-                saveImage(selectedFile.getName());
-            } catch (IOException e) {
-                e.printStackTrace(); // Handle the case where the image could not be saved or loaded
             }
-        }
 
-        projectImageView.setPreserveRatio(true);
-        Double width = projectImageView.getFitWidth();
-        Double height = projectImageView.getFitHeight();
-        imageMultiplier = width / height;
-        projectImageView.setPreserveRatio(false);
+            projectImageView.setPreserveRatio(true);
+            Double width = projectImageView.getFitWidth();
+            Double height = projectImageView.getFitHeight();
+            imageMultiplier = width / height;
+            projectImageView.setPreserveRatio(false);
+        }
     }
 
     public static void clearAllData() {
@@ -621,12 +615,73 @@ public class DashboardController implements Initializable {
     }
 
     private void contextMenuSetup() {
-        ContextMenu mItableMenu = new ContextMenu();
-        MenuItem mIadd = new MenuItem("Add");
-        MenuItem mIdelete = new MenuItem("Delete");
-        MenuItem mIedit = new MenuItem("Edit");
-        mItableMenu.getItems().addAll(mIadd, mIdelete, mIedit);
-        deliverTable.setContextMenu(mItableMenu);
+        if (userType == 0) {
+            ContextMenu mItableMenu = new ContextMenu();
+            MenuItem mIadd = new MenuItem("Add");
+            MenuItem mIdelete = new MenuItem("Delete");
+            MenuItem mIedit = new MenuItem("Edit");
+            mItableMenu.getItems().addAll(mIadd, mIdelete, mIedit);
+            deliverTable.setContextMenu(mItableMenu);
+
+            mIedit.setOnAction((event) -> {
+                int deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
+                int id = Integer.parseInt((data.get(deltableIndex))[0]);
+                TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
+                int delIndexInArrs = 0;
+
+                for (TreeItem<String> project : projectListRoot.getChildren()) {
+                    if (project == selectedProject) {
+                        for (int x = 0; x < project.getChildren().size(); x++) {
+                            if (deliverableIdArr.get(delIndexInArrs) == id) {
+                                projectList.getSelectionModel().select(project.getChildren().get(x));
+                            }
+                            delIndexInArrs++;
+                        }
+                        break;
+                    }
+                    delIndexInArrs = delIndexInArrs + project.getChildren().size();
+                }
+                selectProject();
+            });
+
+            mIdelete.setOnAction((event) -> {
+                TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+                Alert dialog = new Alert(AlertType.CONFIRMATION, "");
+
+                if (selected.getParent() == projectListRoot) {
+                    dialog.setTitle("Delete Deliverable");
+                } else {
+                    dialog.setTitle("Delete Task");
+                }
+
+                dialog.showAndWait().ifPresent(response -> {
+                    if (response == ButtonType.OK && deliverTable.getSelectionModel().getSelectedIndex() != -1) {
+                        if (selected.getParent() == projectListRoot) {
+                            archiveDeliverable(-1);
+                        } else {
+                            archiveTask();
+                        }
+                    }
+                });
+            });
+
+            mIadd.setOnAction((event) -> {
+                TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+                TextInputDialog dialog = new TextInputDialog("");
+                dialog.setHeaderText(null);
+                dialog.setContentText("Name:");
+                dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
+
+                if (selected.getParent() == projectListRoot) {
+                    dialog.setTitle("New Deliverable");
+                } else {
+                    dialog.setTitle("New Task");
+                }
+
+                Optional<String> result = dialog.showAndWait();
+                result.ifPresent(inpt -> addToTable(inpt));
+            });
+        }
 
         ContextMenu usernameMenu = new ContextMenu();
         MenuItem logout = new MenuItem("Log Out");
@@ -636,6 +691,14 @@ public class DashboardController implements Initializable {
         logout.setOnAction((event) -> {
             try {
                 clearAllData();
+
+                File remFile = new File(
+                        "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/Generated/"
+                                + "remFile.txt");
+                if (remFile.exists()) {
+                    remFile.delete();
+                }
+
                 App.setRoot("login");
                 App.setResizable(false);
                 App.setSceneSize(600, 400);
@@ -644,64 +707,6 @@ public class DashboardController implements Initializable {
             }
         });
 
-        mIedit.setOnAction((event) -> {
-            int deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
-            int id = Integer.parseInt((data.get(deltableIndex))[0]);
-            TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
-            int delIndexInArrs = 0;
-
-            for (TreeItem<String> project : projectListRoot.getChildren()) {
-                if (project == selectedProject) {
-                    for (int x = 0; x < project.getChildren().size(); x++) {
-                        if (deliverableIdArr.get(delIndexInArrs) == id) {
-                            projectList.getSelectionModel().select(project.getChildren().get(x));
-                        }
-                        delIndexInArrs++;
-                    }
-                    break;
-                }
-                delIndexInArrs = delIndexInArrs + project.getChildren().size();
-            }
-            selectProject();
-        });
-
-        mIdelete.setOnAction((event) -> {
-            TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-            Alert dialog = new Alert(AlertType.CONFIRMATION, "");
-
-            if (selected.getParent() == projectListRoot) {
-                dialog.setTitle("Delete Deliverable");
-            } else {
-                dialog.setTitle("Delete Task");
-            }
-
-            dialog.showAndWait().ifPresent(response -> {
-                if (response == ButtonType.OK && deliverTable.getSelectionModel().getSelectedIndex() != -1) {
-                    if (selected.getParent() == projectListRoot) {
-                        archiveDeliverable(-1);
-                    } else {
-                        archiveTask();
-                    }
-                }
-            });
-        });
-
-        mIadd.setOnAction((event) -> {
-            TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-            TextInputDialog dialog = new TextInputDialog("");
-            dialog.setHeaderText(null);
-            dialog.setContentText("Name:");
-            dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
-
-            if (selected.getParent() == projectListRoot) {
-                dialog.setTitle("New Deliverable");
-            } else {
-                dialog.setTitle("New Task");
-            }
-
-            Optional<String> result = dialog.showAndWait();
-            result.ifPresent(inpt -> addToTable(inpt));
-        });
     }
 
     private void tableSetup() {
@@ -741,7 +746,13 @@ public class DashboardController implements Initializable {
     }
 
     private void setupProjectTreeView() {
-        ResultSet rs = App.getProjects();
+        ResultSet rs;
+
+        if (userType == 3) {
+            rs = App.getGuestProjects();
+        } else {
+            rs = App.getProjects();
+        }
         int projectId, deliverableProjectId, deliverableId, deliverableLeadId;
         String projectTitle, projectDetails, projectImage, deliverableTitle, deliverableDetails, deliverableStatus,
                 deliverableLead;
@@ -774,7 +785,12 @@ public class DashboardController implements Initializable {
             projectListRoot.getChildren().add(projectBranch);
         }
 
-        rs = App.getDeliverables();
+        if (userType == 3) {
+            rs = App.getGuestDeliverables();
+        } else {
+            rs = App.getDeliverables();
+        }
+
         try {
             ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1028,7 +1044,6 @@ public class DashboardController implements Initializable {
         File md = new File(
                 "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/Generated/"
                         + dateStr);
-
         try {
             md.createNewFile();
             FileWriter writer = new FileWriter(
@@ -1073,41 +1088,43 @@ public class DashboardController implements Initializable {
 
     @FXML
     public void editLead() {
-        int[] indexes = getSelectedIndex();
-        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
-        int idOfArchs = 0;
+        if (userType == 0) {
+            int[] indexes = getSelectedIndex();
+            int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+            int idOfArchs = 0;
 
-        Vector<ArrayList<Object>> archNames = new Vector<>();
-        archNames = App.getArchNames();
+            Vector<ArrayList<Object>> archNames = new Vector<>();
+            archNames = App.getArchNames();
 
-        ArrayList<Integer> userIdParallel = archNamesToIdArr(archNames);
-        ArrayList<String> archNamesArr = archNamesToArr(archNames);
+            ArrayList<Integer> userIdParallel = archNamesToIdArr(archNames);
+            ArrayList<String> archNamesArr = archNamesToArr(archNames);
 
-        Dialog<Integer> dialogLead = new Dialog<>();
-        ComboBox<String> cbox = new ComboBox<String>(FXCollections.observableArrayList(archNamesArr));
-        dialogLead.setTitle("Set Deliverable Lead");
-        dialogLead.setHeaderText(null);
-        dialogLead.setTitle("Choose Architect:");
-        dialogLead.getDialogPane().setContent(cbox);
-        dialogLead.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        cbox.getSelectionModel().selectFirst();
+            Dialog<Integer> dialogLead = new Dialog<>();
+            ComboBox<String> cbox = new ComboBox<String>(FXCollections.observableArrayList(archNamesArr));
+            dialogLead.setTitle("Set Deliverable Lead");
+            dialogLead.setHeaderText(null);
+            dialogLead.setTitle("Choose Architect:");
+            dialogLead.getDialogPane().setContent(cbox);
+            dialogLead.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            cbox.getSelectionModel().selectFirst();
 
-        dialogLead.setResultConverter(dialogButton -> {
-            if (dialogButton == ButtonType.OK) {
-                return cbox.getSelectionModel().getSelectedIndex();
+            dialogLead.setResultConverter(dialogButton -> {
+                if (dialogButton == ButtonType.OK) {
+                    return cbox.getSelectionModel().getSelectedIndex();
+                }
+                return null;
+            });
+
+            Optional<Integer> result = dialogLead.showAndWait();
+
+            if (result.isPresent()) {
+                int index = Integer.valueOf(result.get());
+                String archName = archNamesArr.get(index);
+                deliverableLeadArr.set(delIndexParallel, archName);
+                deliverableLeadIdArr.set(delIndexParallel, userIdParallel.get(index));
+                lblLead.setText(archName);
+                App.updateDelLead(userIdParallel.get(index), deliverableIdArr.get(delIndexParallel));
             }
-            return null;
-        });
-
-        Optional<Integer> result = dialogLead.showAndWait();
-
-        if (result.isPresent()) {
-            int index = Integer.valueOf(result.get());
-            String archName = archNamesArr.get(index);
-            deliverableLeadArr.set(delIndexParallel, archName);
-            deliverableLeadIdArr.set(delIndexParallel, userIdParallel.get(index));
-            lblLead.setText(archName);
-            App.updateDelLead(userIdParallel.get(index), deliverableIdArr.get(delIndexParallel));
         }
     }
 
@@ -1136,14 +1153,16 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void projectAdd() {
-        TextInputDialog dialog = new TextInputDialog("");
-        dialog.setTitle("New Project");
-        dialog.setHeaderText(null);
-        dialog.setContentText("Name:");
-        dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
+        if (userType == 0) {
+            TextInputDialog dialog = new TextInputDialog("");
+            dialog.setTitle("New Project");
+            dialog.setHeaderText(null);
+            dialog.setContentText("Name:");
+            dialog.getDialogPane().setStyle("-fx-background-color: white;-fx-border-color: #E8B631");
 
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(inpt -> addProject(inpt));
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(inpt -> addProject(inpt));
+        }
     }
 
     private void addProject(String projectName) {
@@ -1261,7 +1280,7 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void editTitleDouble(MouseEvent event) {
-        if (event.getClickCount() == 2) {
+        if (event.getClickCount() == 2 && userType == 0) {
             TreeItem<String> selectedProject = projectList.getSelectionModel().getSelectedItem();
 
             TreeItem<String> selectedProjectParent = selectedProject.getParent();
@@ -1289,7 +1308,7 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void editTaskTitle(MouseEvent event) {
-        if (event.getClickCount() == 2) {
+        if (event.getClickCount() == 2 && userType == 0) {
             TextInputDialog dialog = new TextInputDialog(taskTitle.getText());
             dialog.setTitle("Change Task Name");
             dialog.setHeaderText(null);
@@ -1314,7 +1333,7 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void editTaskDetails(MouseEvent event) {
-        if (event.getClickCount() == 2) {
+        if (event.getClickCount() == 2 && userType == 0) {
             Double layoutHeight = taskDetails.getHeight();
             taskDetails.setVisible(false);
             taskDetails.setManaged(false);
@@ -1330,7 +1349,7 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void editProjectDetails(MouseEvent event) {
-        if (event.getClickCount() == 2) {
+        if (event.getClickCount() == 2 && userType == 0) {
             Double layoutHeight = projectDetails.getHeight();
             projectDetails.setVisible(false);
             projectDetails.setManaged(false);
@@ -1365,34 +1384,36 @@ public class DashboardController implements Initializable {
 
     @FXML
     private void btnDelete() {
-        int[] indexes = getSelectedIndex();
-        String msg = "Project";
-        if (!(indexes[0] == -1)) {
-            msg = "Deliverable";
+        if (userType == 0) {
+            int[] indexes = getSelectedIndex();
+            String msg = "Project";
+            if (!(indexes[0] == -1)) {
+                msg = "Deliverable";
 
-        }
-        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
-        Alert dialog = new Alert(AlertType.CONFIRMATION, "Delete " + msg + "(" + selected.getValue() + ")");
-        dialog.showAndWait().ifPresent(response -> {
-            if (indexes[0] == -1) {
-                App.archiveProject(projectIdArr.get(indexes[1]));
-                projectIdArr.remove(indexes[1]);
-                projectTitleArr.remove(indexes[1]);
-                projectDetailsArr.remove(indexes[1]);
-                projectImageArr.remove(indexes[1]);
-                projectListRoot.getChildren().remove(selected);
-                projectList.getSelectionModel().selectFirst();
-                selectProject();
-            } else {
-                int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
-                archiveDeliverable(delIndexParallel);
-                projectListRoot.getChildren().remove(selected);
-                TreeItem<String> parent = selected.getParent();
-                parent.getChildren().remove(selected);
-                projectList.getSelectionModel().select(parent);
-                selectProject();
             }
-        });
+            TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+            Alert dialog = new Alert(AlertType.CONFIRMATION, "Delete " + msg + "(" + selected.getValue() + ")");
+            dialog.showAndWait().ifPresent(response -> {
+                if (indexes[0] == -1) {
+                    App.archiveProject(projectIdArr.get(indexes[1]));
+                    projectIdArr.remove(indexes[1]);
+                    projectTitleArr.remove(indexes[1]);
+                    projectDetailsArr.remove(indexes[1]);
+                    projectImageArr.remove(indexes[1]);
+                    projectListRoot.getChildren().remove(selected);
+                    projectList.getSelectionModel().selectFirst();
+                    selectProject();
+                } else {
+                    int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+                    archiveDeliverable(delIndexParallel);
+                    projectListRoot.getChildren().remove(selected);
+                    TreeItem<String> parent = selected.getParent();
+                    parent.getChildren().remove(selected);
+                    projectList.getSelectionModel().select(parent);
+                    selectProject();
+                }
+            });
+        }
     }
 
     private void addToTable(String name) {
@@ -1519,56 +1540,47 @@ public class DashboardController implements Initializable {
 
     @FXML
     public void editTaskStatus() {
-        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
-        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
-        int taskIndexPar = taskIdArr.indexOf(taskId);
+        if (userType == 0) {
+            int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+            int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+            int taskIndexPar = taskIdArr.indexOf(taskId);
 
-        String status = getStatus();
+            String status = getStatus();
 
-        if (status != "cancel") {
-            taskStatusArr.set(taskIndexPar, status);
-            lblTaskStatus.setText(status);
-            colorStatus();
-            App.updateTaskStatus(status, taskId);
-            refreshTable();
+            if (status != "cancel") {
+                taskStatusArr.set(taskIndexPar, status);
+                lblTaskStatus.setText(status);
+                colorStatus();
+                App.updateTaskStatus(status, taskId);
+                refreshTable();
+            }
+            deliverTable.getSelectionModel().select(taskIndex);
         }
-        deliverTable.getSelectionModel().select(taskIndex);
     }
 
     @FXML
     public void editTaskDue() {
-        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
-        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
-        int taskIndexPar = taskIdArr.indexOf(taskId);
+        if (userType == 0) {
+            int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+            int taskId = Integer.parseInt((data.get(taskIndex))[0]);
+            int taskIndexPar = taskIdArr.indexOf(taskId);
 
-        Optional<LocalDate> result = getDate(taskDueArr.get(taskIndexPar));
+            Optional<LocalDate> result = getDate(taskDueArr.get(taskIndexPar));
 
-        if (result.isPresent()) {
-            java.sql.Date date = java.sql.Date.valueOf(result.get());
-            taskDueArr.set(taskIndexPar, date);
-            lblTaskDue.setText(dateToString(taskDueArr.get(taskIndexPar)));
-            App.updateTaskDue(date, taskId);
-            refreshTable();
+            if (result.isPresent()) {
+                java.sql.Date date = java.sql.Date.valueOf(result.get());
+                taskDueArr.set(taskIndexPar, date);
+                lblTaskDue.setText(dateToString(taskDueArr.get(taskIndexPar)));
+                App.updateTaskDue(date, taskId);
+                refreshTable();
+            }
+            deliverTable.getSelectionModel().select(taskIndex);
         }
-        deliverTable.getSelectionModel().select(taskIndex);
     }
 
     @FXML
     public void addChat() {
-        int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
-        int taskId = Integer.parseInt((data.get(taskIndex))[0]);
-
-        String input = chatField.getText();
-        String chat = App.getUserNow() + ": " + input;
-
-        chatField.setText("");
-        chatList.getItems().add(chat);
-        App.addChat(taskId, chat);
-    }
-
-    @FXML
-    public void addChatEnter(javafx.scene.input.KeyEvent event) {
-        if (event.getCode() == KeyCode.ENTER) {
+        if (userType == 0 || userType == 1) {
             int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
             int taskId = Integer.parseInt((data.get(taskIndex))[0]);
 
@@ -1582,40 +1594,61 @@ public class DashboardController implements Initializable {
     }
 
     @FXML
-    public void editDelStatus() {
-        int[] indexes = getSelectedIndex();
-        int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
-        String status = getStatus();
+    public void addChatEnter(javafx.scene.input.KeyEvent event) {
+        if (userType == 0 || userType == 1) {
+            if (event.getCode() == KeyCode.ENTER) {
+                int taskIndex = deliverTable.getSelectionModel().getSelectedIndex();
+                int taskId = Integer.parseInt((data.get(taskIndex))[0]);
 
-        if (status != "cancel") {
-            deliverableStatusArr.set(delIndexParallel, status);
-            lblStatus.setText(status);
-            colorStatus();
-            App.updateDelStatus(status, deliverableIdArr.get(delIndexParallel));
+                String input = chatField.getText();
+                String chat = App.getUserNow() + ": " + input;
+
+                chatField.setText("");
+                chatList.getItems().add(chat);
+                App.addChat(taskId, chat);
+            }
+        }
+    }
+
+    @FXML
+    public void editDelStatus() {
+        if (userType == 0 || userType == 1) {
+            int[] indexes = getSelectedIndex();
+            int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+            String status = getStatus();
+
+            if (status != "cancel") {
+                deliverableStatusArr.set(delIndexParallel, status);
+                lblStatus.setText(status);
+                colorStatus();
+                App.updateDelStatus(status, deliverableIdArr.get(delIndexParallel));
+            }
         }
     }
 
     @FXML
     public void editDueDate() {
-        int[] indexes = getSelectedIndex();
-        if (indexes[0] == -1) {
-            Optional<LocalDate> result = getDate(projectDueArr.get(indexes[1]));
-            if (result.isPresent()) {
-                java.sql.Date date = java.sql.Date.valueOf(result.get());
-                projectDueArr.set(indexes[1], date);
-                lblDue.setText(dateToString(projectDueArr.get(indexes[1])));
-                App.updateProjectDue(date, projectIdArr.get(indexes[1]));
-            }
-        } else {
-            int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
+        if (userType == 0 || userType == 1) {
+            int[] indexes = getSelectedIndex();
+            if (indexes[0] == -1) {
+                Optional<LocalDate> result = getDate(projectDueArr.get(indexes[1]));
+                if (result.isPresent()) {
+                    java.sql.Date date = java.sql.Date.valueOf(result.get());
+                    projectDueArr.set(indexes[1], date);
+                    lblDue.setText(dateToString(projectDueArr.get(indexes[1])));
+                    App.updateProjectDue(date, projectIdArr.get(indexes[1]));
+                }
+            } else {
+                int delIndexParallel = getDelIndexInPar(indexes[1], indexes[0]);
 
-            Optional<LocalDate> result = getDate(deliverableDueArr.get(delIndexParallel));
+                Optional<LocalDate> result = getDate(deliverableDueArr.get(delIndexParallel));
 
-            if (result.isPresent()) {
-                java.sql.Date date = java.sql.Date.valueOf(result.get());
-                deliverableDueArr.set(delIndexParallel, date);
-                lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
-                App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
+                if (result.isPresent()) {
+                    java.sql.Date date = java.sql.Date.valueOf(result.get());
+                    deliverableDueArr.set(delIndexParallel, date);
+                    lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
+                    App.updateDelDue(date, deliverableIdArr.get(delIndexParallel));
+                }
             }
         }
     }
@@ -1695,6 +1728,10 @@ public class DashboardController implements Initializable {
             lblLead.setManaged(false);
             lblStatus.setManaged(false);
             lblStatus.setVisible(false);
+            if (userType == 0) {
+                btnGenQr.setVisible(true);
+                btnGenQr.setManaged(true);
+            }
             lblDue.setText(dateToString(projectDueArr.get(indexes[1])));
             deliverCol.setText("Deliverable");
             deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
@@ -1718,12 +1755,15 @@ public class DashboardController implements Initializable {
             }
         } else {
             int delIndexParallel = getDelIndexInPar(selectedIndex, selectedIndexParent);
+
             lblDue.setVisible(true);
             lblDue.setManaged(true);
             lblDue.setText(dateToString(deliverableDueArr.get(delIndexParallel)));
-
             lblLead.setVisible(true);
             lblLead.setManaged(true);
+            btnGenQr.setVisible(false);
+            btnGenQr.setManaged(false);
+
             String leadName = (deliverableLeadArr.get(delIndexParallel).equals("")) ? "Lead Name"
                     : deliverableLeadArr.get(delIndexParallel);
             lblLead.setText(leadName);
