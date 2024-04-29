@@ -8,6 +8,9 @@ module com.mycompany.architask {
     requires webcam.capture;
     requires com.google.zxing;
     requires com.google.zxing.javase;
+    requires org.simplejavamail;
+    requires org.simplejavamail.core;
+    requires jakarta.mail;
     
     opens com.mycompany.architask to javafx.fxml;
 

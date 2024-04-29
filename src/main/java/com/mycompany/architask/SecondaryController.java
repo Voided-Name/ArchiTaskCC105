@@ -14,6 +14,10 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 import java.util.Scanner;
+import org.simplejavamail.email.EmailBuilder;
+import org.simplejavamail.api.email.Email;
+import org.simplejavamail.api.mailer.Mailer;
+import org.simplejavamail.mailer.MailerBuilder;
 
 public class SecondaryController {
     @FXML
@@ -62,6 +66,13 @@ public class SecondaryController {
     private void scanQr() {
         new QrCapture();
     }
+    
+   @FXML 
+   public void forgotPassword(){
+       Email email = EmailBuilder.startingBlank().from("architask", "architaskk@gmail.com").to("jet", "zairaganda10@gmail.com").withPlainText("hehe boi").buildEmail();
+       Mailer mailer = MailerBuilder.withSMTPServer("smtp.gmail.com", 587, "architaskk@gmail.com", "aslu uwtb cjdy imtm").buildMailer();
+       mailer.sendMail(email);   
+   }
 
     @FXML
     private void login() throws IOException {
