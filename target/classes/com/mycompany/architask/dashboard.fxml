@@ -26,8 +26,8 @@
     </stylesheets>
    <children>
       <VBox prefHeight="200.0" prefWidth="100.0" />
-      <TreeView fx:id="projectList" layoutY="62.4" onMouseClicked="#selectProject" prefHeight="338.0" prefWidth="200.0" styleClass="blueOnWhite" AnchorPane.bottomAnchor="0.0" AnchorPane.topAnchor="62.0" />
-      <HBox layoutY="31.0" prefHeight="30.0" prefWidth="300.0" spacing="10.0">
+      <TreeView fx:id="projectList" layoutY="31.0" onMouseClicked="#selectProject" prefHeight="1970.0" prefWidth="200.0" styleClass="blueOnWhite" AnchorPane.bottomAnchor="-1.0" AnchorPane.topAnchor="31.0" />
+      <HBox prefHeight="30.0" prefWidth="300.0" spacing="10.0">
          <children>
             <ImageView fitHeight="56.0" fitWidth="30.0" onMouseClicked="#projectAdd" onMouseEntered="#cursorHand" onMouseExited="#cursorDefault" pickOnBounds="true" preserveRatio="true">
                <image>
@@ -44,7 +44,7 @@
             <Insets left="10.0" />
          </padding>
       </HBox>
-      <HBox alignment="CENTER_RIGHT" layoutX="310.0" layoutY="31.0" prefHeight="30.0" prefWidth="268.0" spacing="10.0" AnchorPane.rightAnchor="22.0">
+      <HBox alignment="CENTER_RIGHT" layoutX="308.0" prefHeight="30.0" prefWidth="268.0" spacing="10.0" AnchorPane.rightAnchor="24.0">
          <padding>
             <Insets left="10.0" />
          </padding>
@@ -52,17 +52,19 @@
             <Label fx:id="username" text="username" />
          </children>
       </HBox>
-      <ScrollPane id="mainScroll" fx:id="mainScroll" focusTraversable="false" layoutX="199.2" layoutY="62.0" prefHeight="338.0" prefWidth="401.0" style="-fx-border-color: #0A2342; -fx-padding: 10;" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="199.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="61.60000000000002">
+      <ScrollPane id="mainScroll" fx:id="mainScroll" focusTraversable="false" layoutX="200.0" layoutY="31.0" prefHeight="1970.0" prefWidth="401.0" style="-fx-border-color: #0A2342; -fx-padding: 10;" AnchorPane.bottomAnchor="-1.0" AnchorPane.leftAnchor="200.0" AnchorPane.rightAnchor="-1.0" AnchorPane.topAnchor="31.0">
          <content>
             <VBox fx:id="mainVBox" spacing="10.0">
                <children>
-                  <Text fx:id="projectTitle" onMouseClicked="#editTitleDouble" strokeType="OUTSIDE" strokeWidth="0.0" text="Title" wrappingWidth="341.33673000335693">
+                  <Text fx:id="projectTitle" fill="#0a2342" onMouseClicked="#editTitleDouble" strokeType="OUTSIDE" strokeWidth="0.0" text="Title" wrappingWidth="341.33673000335693">
                      <font>
                         <Font name="System Bold" size="35.0" />
                      </font>
                   </Text>
                   <Rectangle fx:id="line" arcHeight="5.0" arcWidth="5.0" fill="#e8b631" height="8.0" stroke="BLACK" strokeType="INSIDE" strokeWidth="0.0" width="200.0" />
-                  <Button fx:id="btnImage" mnemonicParsing="false" onMouseClicked="#setImage" text="Add Image" />
+                  <Button fx:id="btnGenQr" mnemonicParsing="false" onMouseClicked="#genQr" style="-fx-background-color: #0a2342;" text="Generate QR" textFill="#eff9f0" />
+                  <Button fx:id="btnImage" mnemonicParsing="false" onMouseClicked="#setImage" style="-fx-background-color: #0a2342;" text="Add Image" textFill="#eff9f0" />
+                  <Button mnemonicParsing="false" onMouseClicked="#openFolder" prefHeight="26.0" prefWidth="98.0" style="-fx-background-color: #0a2342;" text="Project Folder" textFill="#eff9f0" />
                   <ImageView fx:id="projectImageView" fitHeight="151.0" fitWidth="202.0" onMouseClicked="#setImage" pickOnBounds="true" smooth="false" />
                   <TextArea fx:id="projectDetailsArea" prefHeight="78.0" prefWidth="370.0" style="-fx-background-color: white; -fx-background-insets: 0; -fx-text-fill: black; -fx-border-color: #0A2342;" text="Details">
                      <font>
@@ -78,7 +80,7 @@
                   </Label>
                   <HBox prefHeight="62.0" prefWidth="370.0" spacing="20.0">
                      <children>
-                        <Label fx:id="lblDue" onMouseClicked="#editDueDate" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#ee5622" wrapText="true">
+                        <Label fx:id="lblDue" onMouseClicked="#editDueDate" style="-fx-border-color: #e8b631; -fx-border-radius: 10; -fx-background-color: wh #EFF9F0te;" text="duedate" textFill="#0a2342" wrapText="true">
                            <font>
                               <Font size="35.0" />
                            </font>
@@ -96,7 +98,7 @@
                         </Label>
                      </children>
                   </HBox>
-                  <Label fx:id="lblLead" onMouseClicked="#editLead" text="Deliverable Lead Name">
+                  <Label fx:id="lblLead" onMouseClicked="#editLead" text="Deliverable Lead Name" textFill="#0a2342">
                      <font>
                         <Font size="25.0" />
                      </font>
@@ -107,13 +109,13 @@
                      </placeholder>
                     <columns>
                      <TableColumn fx:id="deliverId" maxWidth="0.0" minWidth="0.0" prefWidth="0.0" resizable="false" text="id" />
-                     <TableColumn fx:id="deliverCol" prefWidth="68.79998779296875" resizable="false" text="Deliverable" />
-                     <TableColumn fx:id="deliverStatusCol" prefWidth="75.0" resizable="false" text="Status" />
-                     <TableColumn fx:id="deliverDueCol" prefWidth="81.60004252195358" resizable="false" text="Due Date" />
-                     <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" resizable="false" text="Lead" />
+                     <TableColumn fx:id="deliverCol" prefWidth="68.79998779296875" resizable="false" style="-fx-background-color: e8b631;" text="Deliverable" />
+                     <TableColumn fx:id="deliverStatusCol" prefWidth="75.0" resizable="false" style="-fx-background-color: e8b631;" text="Status" />
+                     <TableColumn fx:id="deliverDueCol" prefWidth="81.60004252195358" resizable="false" style="-fx-background-color: e8b631;" text="Due Date" />
+                     <TableColumn fx:id="deliverLeadCol" prefWidth="75.0" resizable="false" style="-fx-background-color: e8b631;" text="Lead" />
                     </columns>
                   </TableView>
-                  <Text fx:id="taskTitle" onMouseClicked="#editTaskTitle" strokeType="OUTSIDE" strokeWidth="0.0" text="Task Name" wrappingWidth="341.33673000335693">
+                  <Text fx:id="taskTitle" fill="#0a2342" onMouseClicked="#editTaskTitle" strokeType="OUTSIDE" strokeWidth="0.0" text="Task Name" wrappingWidth="341.33673000335693">
                      <font>
                         <Font name="System Bold" size="35.0" />
                      </font>
@@ -133,7 +135,7 @@
                   </Label>
                   <HBox prefHeight="62.0" prefWidth="370.0" spacing="20.0">
                      <children>
-                        <Label fx:id="lblTaskDue" onMouseClicked="#editTaskDue" style="-fx-border-color: #ee5622; -fx-border-radius: 10; -fx-background-color: white;" text="duedate" textFill="#ee5622" wrapText="true">
+                        <Label fx:id="lblTaskDue" onMouseClicked="#editTaskDue" style="-fx-border-color: #e8b631; -fx-border-radius: 10; -fx-background-color: w #EFF9F0ite;" text="duedate" textFill="#0a2342" wrapText="true">
                            <font>
                               <Font size="35.0" />
                            </font>
@@ -158,13 +160,12 @@
                   </HBox>
                   <HBox fx:id="chatTextHBox" alignment="CENTER" prefHeight="65.0" prefWidth="370.0" spacing="10.0">
                      <children>
-                        <TextField fx:id="chatField" prefHeight="41.0" prefWidth="370.0" />
+                        <TextField fx:id="chatField" onKeyPressed="#addChatEnter" prefHeight="41.0" prefWidth="370.0" />
                      </children>
                   </HBox>
                   <HBox fx:id="chatBtnHBox" alignment="CENTER" prefHeight="34.0" prefWidth="370.0" spacing="10.0">
                      <children>
-                        <Button contentDisplay="TOP" mnemonicParsing="false" onMouseClicked="#addChat" text="Enter" />
-                        <Button contentDisplay="TOP" mnemonicParsing="false" text="FILE" />
+                        <Button contentDisplay="TOP" mnemonicParsing="false" onMouseClicked="#addChat" style="-fx-background-color: #0a2342;" text="Enter" textFill="#eff9f0" />
                      </children>
                   </HBox>
                </children>

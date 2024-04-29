@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.architask.SecondaryController">
+   <left>
+      <AnchorPane prefHeight="400.0" prefWidth="301.0" style="-fx-background-color: #8e8e8e;" BorderPane.alignment="CENTER">
+         <children>
+            <ImageView fitHeight="551.0" fitWidth="302.0" layoutX="-3.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@PIC/background1.jpg" />
+               </image>
+            </ImageView>
+            <ImageView fitHeight="59.0" fitWidth="60.0" layoutX="124.0" layoutY="101.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@BGGC/logo_2.jpg" />
+               </image>
+            </ImageView>
+            <Label alignment="CENTER" contentDisplay="CENTER" layoutX="74.0" layoutY="188.0" prefHeight="27.0" prefWidth="154.0" text="MICHAEL BERBER" textAlignment="JUSTIFY" textFill="#e8b631">
+               <font>
+                  <Font name="System Bold" size="18.0" />
+               </font>
+            </Label>
+            <Label alignment="CENTER" contentDisplay="CENTER" layoutX="71.0" layoutY="219.0" minWidth="-Infinity" prefHeight="17.0" prefWidth="164.0" text="A  R  C  H  I  T  E  C  T  U  R  E " textAlignment="JUSTIFY" textFill="#e8b631" />
+         </children></AnchorPane>
+   </left>
+   <right>
+      <AnchorPane prefHeight="400.0" prefWidth="300.0" style="-fx-background-color: #EFF9F0;" BorderPane.alignment="CENTER">
+         <children>
+            <ImageView fitHeight="400.0" fitWidth="337.0" layoutX="13.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@PIC/YELLOW.png" />
+               </image>
+            </ImageView>
+            <TextField fx:id="lUName" layoutX="27.0" layoutY="140.0" prefHeight="25.0" prefWidth="250.0" promptText="Username" style="-fx-border-color: #0a2342; -fx-background-color: transparent; -fx-border-width: 0px 0px 1.5px 0px;" />
+            <Text fill="#0a2342" layoutX="107.0" layoutY="78.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Login">
+               <font>
+                  <Font name="System Bold" size="35.0" />
+               </font>
+            </Text>
+            <PasswordField fx:id="lPassword" layoutX="26.0" layoutY="186.0" prefHeight="25.0" prefWidth="250.0" promptText="Password" style="-fx-background-color: transparent; -fx-border-color: #0a2342; -fx-border-width: 0px 0px 1.5px 0px;" />
+            <Button fx:id="btnLogin" layoutX="84.0" layoutY="254.0" mnemonicParsing="false" onAction="#login" prefHeight="25.0" prefWidth="135.0" style="-fx-background-color: #0a2342;" text="Connect" textFill="#eff9f0" />
+            <Hyperlink layoutX="100.0" layoutY="296.0" text="Forgot Password?" />
+            <Hyperlink layoutX="126.0" layoutY="320.0" onAction="#switchToSignUp" text="Sign Up" />
+            <Label fx:id="loginWarn" alignment="CENTER" layoutX="26.0" layoutY="213.0" prefHeight="18.0" prefWidth="250.0" textFill="RED" />
+            <Button onMouseClicked="scanQr" layoutX="27.0" layoutY="361.0" mnemonicParsing="false" text="QR" />
+         </children>
+      </AnchorPane>
+   </right>
+</BorderPane>

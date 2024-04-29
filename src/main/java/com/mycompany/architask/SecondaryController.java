@@ -27,6 +27,11 @@ public class SecondaryController {
     }
 
     @FXML
+    private void scanQr() {
+        new QrCapture();
+    }
+
+    @FXML
     private void login() throws IOException {
         loginWarn.setText("");
 
@@ -47,12 +52,17 @@ public class SecondaryController {
         // App.loginSQL returns a boolean of whether the credentials inputted exists in
         // the system and is valid
         if (App.loginSQL(uName, password)) {
+            int uType;
             try {
                 App.currentUser(uName);
             } catch (SQLException err) {
                 err.printStackTrace();
             }
-            App.setRoot("dashboard");
+            if (App.getUserType() == 2) {
+                App.setRoot("admin");
+            } else {
+                App.setRoot("dashboard");
+            }
             App.setResizable(true);
             App.setMaximized(true);
         } else {

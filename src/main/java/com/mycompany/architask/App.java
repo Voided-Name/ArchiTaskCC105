@@ -10,6 +10,7 @@ import java.sql.*;
 import javax.swing.JOptionPane;
 import javafx.scene.control.Control;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.Cursor;
@@ -30,11 +31,17 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        scene = new Scene(loadFXML("dashboard"), 600, 400);
+        scene = new Scene(loadFXML("login"), 600, 400);
         stage.setScene(scene);
         stage.show();
-        stage.setResizable(true);
+        stage.setResizable(false);
+        stage.getIcons()
+                .add(new Image(App.class.getResourceAsStream("/img/logo_2.jpg")));
         stage.setMaximized(false);
+    }
+
+    public static int getUserType() {
+        return userTypeNow;
     }
 
     // cursor functions
@@ -112,7 +119,7 @@ public class App extends Application {
 
     public static void updateTaskStatus(String taskStatus, int taskId) {
         openConnection();
-        String query = "UPDATE tbltasks SET taskStatus = ? WHERE taskId = ?";
+        String query = "UPDATE tbltasks SET status = ? WHERE taskId = ?";
         try {
             PreparedStatement pst = conn.prepareStatement(query);
             pst.setString(1, taskStatus);
@@ -580,29 +587,69 @@ public class App extends Application {
         return userNow;
     }
 
+    public static void adminEdit(int userId, int userType) {
+        openConnection();
+        String query = "UPDATE tbluseraccount SET utype = ? WHERE id = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, userType);
+            pst.setInt(2, userId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static void adminArchive(int userId) {
+        openConnection();
+        String query = "DELETE FROM tbluseraccount WHERE id = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setInt(1, userId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+    }
+
+    public static ArrayList<ArrayList<String>> adminTableValues() {
+        ArrayList<ArrayList<String>> cells = new ArrayList<>();
+        openConnection();
+        String query = "SELECT  id, fname, lname, email, username, utype FROM tbluseraccount";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            ResultSet rs = pst.executeQuery();
+
+            while (rs.next()) {
+                ArrayList<String> buffer = new ArrayList<>();
+                buffer.add(Integer.toString(rs.getInt("id")));
+                buffer.add(rs.getString("username"));
+                buffer.add(rs.getString("fname"));
+                buffer.add(rs.getString("lname"));
+                buffer.add(rs.getString("email"));
+                buffer.add(Integer.toString(rs.getInt("utype")));
+                cells.add(buffer);
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
+        return cells;
+    }
+
     // queries
     static ResultSet getProjects() {
         openConnection();
         ResultSet rs = null;
-        if (userTypeNow == 0) {
-            String query = "SELECT projectId, projectTitle, projectDetails, projectImage, projectDue FROM tblprojectinfo";
+        String query = "SELECT projectId, projectTitle, projectDetails, projectImage, projectDue FROM tblprojectinfo";
 
-            try {
-                PreparedStatement stmt = conn.prepareStatement(query);
-                rs = stmt.executeQuery();
-            } catch (SQLException err) {
-                err.printStackTrace();
-            }
-        } else if (userTypeNow == 1) {
-            String query = "SELECT title, id FROM tblprojects JOIN tbluserproject ON tblprojects.id = tbluserproject.idProject WHERE tbluserproject.idUser = ?";
-
-            try {
-                PreparedStatement stmt = conn.prepareStatement(query);
-                stmt.setInt(1, userId);
-                rs = stmt.executeQuery();
-            } catch (SQLException err) {
-                err.printStackTrace();
-            }
+        try {
+            PreparedStatement stmt = conn.prepareStatement(query);
+            rs = stmt.executeQuery();
+        } catch (SQLException err) {
+            err.printStackTrace();
         }
 
         return rs;
@@ -610,24 +657,12 @@ public class App extends Application {
 
     static ResultSet getDeliverables() {
         ResultSet rs = null;
-        if (userTypeNow == 0) {
-            String query = "SELECT projectId, deliverableId, deliverableTitle, deliverableDetails, deliverableStatus, deliverableLead, deliverableDue FROM tbldeliverables ORDER BY projectId";
-            try {
-                PreparedStatement stmt = conn.prepareStatement(query);
-                rs = stmt.executeQuery();
-            } catch (SQLException err) {
-                err.printStackTrace();
-            }
-        } else if (userTypeNow == 1) {
-            String query = "SELECT title, id FROM tblprojects JOIN tbluserproject ON tblprojects.id = tbluserproject.idProject WHERE tbluserproject.idUser = ?";
-
-            try {
-                PreparedStatement stmt = conn.prepareStatement(query);
-                stmt.setInt(1, userId);
-                rs = stmt.executeQuery();
-            } catch (SQLException err) {
-                err.printStackTrace();
-            }
+        String query = "SELECT projectId, deliverableId, deliverableTitle, deliverableDetails, deliverableStatus, deliverableLead, deliverableDue FROM tbldeliverables ORDER BY projectId";
+        try {
+            PreparedStatement stmt = conn.prepareStatement(query);
+            rs = stmt.executeQuery();
+        } catch (SQLException err) {
+            err.printStackTrace();
         }
 
         return rs;
@@ -645,6 +680,45 @@ public class App extends Application {
         }
 
         return rs;
+    }
+
+    static void sendQr(String qrData) {
+        System.out.println(qrData);
+        openConnection();
+        String query = "SELECT projectId FROM tblprojectinfo WHERE projectQr = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, qrData);
+            ResultSet rs = pst.executeQuery();
+            if (rs.isBeforeFirst()) {
+                try {
+                    setRoot("dashboard");
+                    userTypeNow = 3;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        closeConnection();
+    }
+
+    static void setQr(int projectId, String qrData) {
+        System.out.println(projectId);
+        System.out.println(qrData);
+        openConnection();
+        String query = "UPDATE TABLE tblprojectinfo SET projectQr = ? WHERE = ?";
+        try {
+            PreparedStatement pst = conn.prepareStatement(query);
+            pst.setString(1, qrData);
+            pst.setInt(2, projectId);
+            pst.executeUpdate();
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+        closeConnection();
     }
 
     static void registerSQL(String fName, String lName, String email, String username, String password, int userType) {
@@ -708,6 +782,7 @@ public class App extends Application {
     }
 
     static boolean doesUNameExist(String username) {
+        openConnection();
         boolean exists = false;
         String query = "SELECT EXISTS(SELECT username FROM tbluseraccount WHERE username = ?  ) As 'exists'";
         try {
@@ -725,6 +800,7 @@ public class App extends Application {
             err.printStackTrace();
         }
 
+        closeConnection();
         return exists;
     }
 
@@ -804,15 +880,18 @@ public class App extends Application {
             } else {
                 if (control instanceof TextField) {
                     if (!((TextField) control).getText().isBlank()) {
-                        control.setStyle("");
+                        control.setStyle(
+                                "-fx-border-color: #0a2342;-fx-background-color: transparent;-fx-border-width: 0 0 1 0;");
                     }
                 } else if (control instanceof PasswordField) {
                     if (!((PasswordField) control).getText().isBlank()) {
-                        control.setStyle("");
+                        control.setStyle(
+                                "-fx-border-color: #0a2342;-fx-background-color: transparent;-fx-border-width: 0 0 1 0;");
                     }
                 } else if (control instanceof ChoiceBox) {
                     if (!(control == null) || !((String) ((ChoiceBox<?>) control).getValue()).isBlank()) {
-                        control.setStyle("");
+                        control.setStyle(
+                                "-fx-border-color: #0a2342;-fx-background-color: transparent;-fx-border-width: 0 0 1 0;");
                     }
                 }
             }

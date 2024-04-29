@@ -10,14 +10,23 @@ import java.io.File;
 import java.net.URL;
 import java.util.ResourceBundle;
 import java.sql.*;
+import java.text.SimpleDateFormat;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.WriterException;
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
 import javafx.fxml.Initializable;
 import javafx.fxml.FXML;
+import java.io.FileWriter;
+import java.io.IOException;
 import javafx.event.EventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
 import javafx.scene.control.TreeView;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.control.TreeCell;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ButtonType;
@@ -60,7 +69,10 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.binding.Bindings;
 import java.util.ArrayList;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.Optional;
+import java.awt.desktop.*;
+import java.awt.Desktop;
 
 /**
  * FXML Controller class
@@ -156,6 +168,8 @@ public class DashboardController implements Initializable {
     @FXML
     Button btnImage;
     @FXML
+    Button btnGenQr;
+    @FXML
     ListView<String> chatList;
     @FXML
     TextField chatField;
@@ -222,7 +236,7 @@ public class DashboardController implements Initializable {
         line.widthProperty().bind(mainVBox.widthProperty().multiply(0.9));
 
         mainScroll.widthProperty().addListener((obs, oldVal, newVal) -> {
-            System.out.println("ScrollPane Width: " + newVal);
+            // System.out.println("ScrollPane Width: " + newVal);
             if (mainScroll.widthProperty().multiply(0.7).get() > 900) {
                 projectImageView.setFitWidth(900);
                 projectImageView.setFitHeight(projectImageView.fitWidthProperty().get() * imageMultiplier);
@@ -234,11 +248,11 @@ public class DashboardController implements Initializable {
         });
 
         line.widthProperty().addListener((obs, oldVal, newVal) -> {
-            System.out.println("Line Width: " + newVal);
+            // System.out.println("Line Width: " + newVal);
         });
 
         projectImageView.fitWidthProperty().addListener((obs, oldVal, newVal) -> {
-            System.out.println("ImageView Fit Width: " + newVal);
+            // System.out.println("ImageView Fit Width: " + newVal);
         });
 
         // chat functionalty hidden, to be added if there is enough time
@@ -254,6 +268,33 @@ public class DashboardController implements Initializable {
         chatBtnHBox.prefWidthProperty().bind(mainScroll.widthProperty().multiply(0.9));
 
         chatList.prefWidthProperty().bind(mainScroll.widthProperty().divide(3));
+        chatList.setCellFactory(param -> {
+            ListCell<String> listCell = new ListCell<String>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setGraphic(null);
+                        setText(null);
+                        // other stuff to do...
+
+                    } else {
+
+                        // set the width's
+                        setMinWidth(param.getWidth());
+                        setMaxWidth(param.getWidth());
+                        setPrefWidth(param.getWidth());
+
+                        // allow wrapping
+                        setWrapText(true);
+
+                        setText(item.toString());
+
+                    }
+                };
+            };
+            return listCell;
+        });
 
         taskDetailsArea.focusedProperty().addListener((observable, oldValue, newValue) -> {
             if (oldValue) {
@@ -419,6 +460,34 @@ public class DashboardController implements Initializable {
         getAllTasks();
     }
 
+    @FXML
+    private void genQr() {
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        int indexes[] = getSelectedIndex();
+        int projectId = projectIdArr.get(indexes[1]);
+
+        java.util.Date date = new java.util.Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd-HH-mm-ss");
+        String dateStr = dateFormat.format(date);
+        String qrCodeContent = projectList.getSelectionModel().getSelectedItem().getValue() + dateStr;
+        int qrCodeSize = 400; // You can provide an option to let the user select the size
+        String filePath = "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/QR/"
+                + dateStr + ".png";
+        try {
+            BitMatrix bitMatrix = new MultiFormatWriter().encode(qrCodeContent, BarcodeFormat.QR_CODE, qrCodeSize,
+                    qrCodeSize);
+            File file = new File(filePath);
+            MatrixToImageWriter.writeToPath(bitMatrix, "PNG", file.toPath());
+            System.out.println("QR code generated and saved to " + file.getAbsolutePath());
+            App.setQr(projectId, qrCodeContent);
+            Desktop.getDesktop().open(new File(filePath));
+        } catch (WriterException e) {
+            System.err.println("Error generating QR code: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("Error saving QR code to file: " + e.getMessage());
+        }
+    }
+
     private void saveImage(String name) {
         TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
         int indexes[] = getSelectedIndex();
@@ -517,6 +586,40 @@ public class DashboardController implements Initializable {
         projectImageView.setPreserveRatio(false);
     }
 
+    public static void clearAllData() {
+        projectListRoot = new TreeItem<>("Root");
+        projectLeafs.clear();
+        projectLeafsBuffer.clear();
+        projectBranches.clear();
+        projectIdArr.clear();
+        projectTitleArr.clear();
+        projectDetailsArr.clear();
+        projectImageArr.clear();
+        deliverableProjectIdArr.clear();
+        deliverableIdArr.clear();
+        deliverableTitleArr.clear();
+        deliverableDetailsArr.clear();
+        deliverableStatusArr.clear();
+        deliverableLeadArr.clear();
+        deliverableLeadIdArr.clear();
+        deliverableDueArr.clear();
+        projectDueArr.clear();
+        deliverableArchsArr.clear();
+        newProjectIds.clear();
+        data.clear();
+        gotNextId = false;
+        nextProjectId = 0;
+        prevSelected = null;
+        prevSelectedPrimed = false;
+        taskDeliverableIdArr.clear();
+        taskIdArr.clear();
+        taskTitleArr.clear();
+        taskDetailsArr.clear();
+        taskStatusArr.clear();
+        taskDueArr.clear();
+        imageMultiplier = 0.;
+    }
+
     private void contextMenuSetup() {
         ContextMenu mItableMenu = new ContextMenu();
         MenuItem mIadd = new MenuItem("Add");
@@ -524,6 +627,22 @@ public class DashboardController implements Initializable {
         MenuItem mIedit = new MenuItem("Edit");
         mItableMenu.getItems().addAll(mIadd, mIdelete, mIedit);
         deliverTable.setContextMenu(mItableMenu);
+
+        ContextMenu usernameMenu = new ContextMenu();
+        MenuItem logout = new MenuItem("Log Out");
+        usernameMenu.getItems().add(logout);
+        username.setContextMenu(usernameMenu);
+
+        logout.setOnAction((event) -> {
+            try {
+                clearAllData();
+                App.setRoot("login");
+                App.setResizable(false);
+                App.setSceneSize(600, 400);
+            } catch (IOException err) {
+                err.printStackTrace();
+            }
+        });
 
         mIedit.setOnAction((event) -> {
             int deltableIndex = deliverTable.getSelectionModel().getSelectedIndex();
@@ -551,9 +670,9 @@ public class DashboardController implements Initializable {
             Alert dialog = new Alert(AlertType.CONFIRMATION, "");
 
             if (selected.getParent() == projectListRoot) {
-                dialog.setTitle("New Deliverable");
+                dialog.setTitle("Delete Deliverable");
             } else {
-                dialog.setTitle("New Task");
+                dialog.setTitle("Delete Task");
             }
 
             dialog.showAndWait().ifPresent(response -> {
@@ -587,9 +706,6 @@ public class DashboardController implements Initializable {
 
     private void tableSetup() {
         deliverCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
-        Label tableTooltipDeliver = new Label("");
-        tableTooltipDeliver.setTooltip(new Tooltip("Right-Click to Edit Table"));
-        deliverCol.setGraphic(tableTooltipDeliver);
         deliverStatusCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
         deliverLeadCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
         deliverDueCol.prefWidthProperty().bind(deliverTable.widthProperty().divide(4));
@@ -747,7 +863,7 @@ public class DashboardController implements Initializable {
         refreshTable();
     }
 
-    private void getAllTasks() {
+    private static void getAllTasks() {
         int taskDeliverableId;
         int taskId;
         String taskTitle;
@@ -780,7 +896,7 @@ public class DashboardController implements Initializable {
         App.closeConnection();
     }
 
-    private ArrayList<ArrayList<String>> getTasksUnderDeliverable(int indexDeliver) {
+    private static ArrayList<ArrayList<String>> getTasksUnderDeliverable(int indexDeliver) {
         ArrayList<ArrayList<String>> taskUnderProject = new ArrayList<ArrayList<String>>();
         int deliverableId = deliverableIdArr.get(indexDeliver);
 
@@ -848,6 +964,113 @@ public class DashboardController implements Initializable {
         }
     }
 
+    public static void generateMD() {
+        ResultSet rs = App.getProjects();
+        int projectId, deliverableProjectId, deliverableId, deliverableLeadId;
+        String projectTitle, projectDetails, projectImage, deliverableTitle, deliverableDetails, deliverableStatus,
+                deliverableLead;
+        String[] rowBuffer;
+        java.sql.Date deliverableDue, projectDue;
+
+        try {
+            while (rs.next()) {
+                // geting current project, deliverable, and task information
+                projectId = rs.getInt("projectId");
+                projectTitle = rs.getString("projectTitle");
+                projectDetails = rs.getString("projectDetails");
+                projectImage = rs.getString("projectImage");
+                projectDue = rs.getDate("projectDue");
+
+                // parallel arrays for reference
+                projectTitleArr.add(projectTitle);
+                projectIdArr.add(projectId);
+                projectDetailsArr.add(projectDetails);
+                projectImageArr.add(projectImage);
+                projectDueArr.add(projectDue);
+
+                projectBranches.add(new TreeItem<String>(projectTitle));
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        rs = App.getDeliverables();
+        try {
+            ResultSetMetaData rsmd = rs.getMetaData();
+
+            while (rs.next()) {
+                deliverableProjectId = rs.getInt("projectId");
+                deliverableId = rs.getInt("deliverableId");
+                deliverableTitle = rs.getString("deliverableTitle");
+                deliverableDetails = rs.getString("deliverableDetails");
+                deliverableStatus = rs.getString("deliverableStatus");
+                deliverableLeadId = rs.getInt("deliverableLead");
+                deliverableDue = rs.getDate("deliverableDue");
+
+                deliverableProjectIdArr.add(deliverableProjectId);
+                deliverableIdArr.add(deliverableId);
+                deliverableTitleArr.add(deliverableTitle);
+                deliverableDetailsArr.add(deliverableDetails);
+                deliverableStatusArr.add(deliverableStatus);
+                deliverableLeadIdArr.add(deliverableLeadId);
+                deliverableLeadArr.add(App.getLead(deliverableLeadId));
+                deliverableDueArr.add(deliverableDue);
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+        }
+
+        getAllTasks();
+        System.out.println("Generating Markdown");
+        java.util.Date date = new java.util.Date();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-mm-dd-HH-mm-ss");
+        String dateStr = dateFormat.format(date) + ".md";
+        File md = new File(
+                "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/Generated/"
+                        + dateStr);
+
+        try {
+            md.createNewFile();
+            FileWriter writer = new FileWriter(
+                    "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/Generated/"
+                            + dateStr);
+
+            int x = 0;
+            for (String project : projectTitleArr) {
+                writer.write("# " + project + "\n\n");
+                writer.write("- " + projectDueArr.get(x) + "\n\n");
+                writer.write(projectDetailsArr.get(x) + "\n\n");
+                int i = 0;
+                ArrayList<ArrayList<String>> dels = getDeliverablesUnderProject(x);
+                for (ArrayList<String> deliverable : dels) {
+                    writer.write("## " + deliverable.get(1) + "\n\n");
+                    int delIndexParallel = getDelIndexInPar(i, x);
+                    writer.write("- " + deliverableDueArr.get(x) + "\n\n");
+                    writer.write(deliverableDetailsArr.get(x) + "\n\n");
+                    writer.write(deliverableStatusArr.get(x) + "\n\n");
+                    ArrayList<ArrayList<String>> tasks = getTasksUnderDeliverable(delIndexParallel);
+                    for (ArrayList<String> task : tasks) {
+                        writer.write("### " + task.get(1) + "\n");
+                        // writer.write("- " + task.get(4) + "\n");
+                        writer.write("- " + task.get(3) + "\n");
+                        writer.write("- " + task.get(2) + "\n");
+                    }
+                    i++;
+                }
+                x++;
+                System.out.println(i);
+            }
+            System.out.println(x);
+            writer.close();
+
+            Desktop.getDesktop().open(new File(
+                    "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/Generated/"
+                            + dateStr));
+        } catch (IOException err) {
+            err.printStackTrace();
+        }
+    }
+
     @FXML
     public void editLead() {
         int[] indexes = getSelectedIndex();
@@ -888,7 +1111,7 @@ public class DashboardController implements Initializable {
         }
     }
 
-    private ArrayList<ArrayList<String>> getDeliverablesUnderProject(int indexProject) {
+    private static ArrayList<ArrayList<String>> getDeliverablesUnderProject(int indexProject) {
         ArrayList<ArrayList<String>> deliverUnderProject = new ArrayList<ArrayList<String>>();
         int projectId = projectIdArr.get(indexProject);
 
@@ -942,6 +1165,10 @@ public class DashboardController implements Initializable {
         projectDetailsArr.add("Double Click to Edit");
         projectImageArr.add("");
         projectDueArr.add(new java.sql.Date((new java.util.Date()).getTime()));
+        new File(
+                "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/ProjectFiles/"
+                        + projectName + "/")
+                .mkdirs();
     }
 
     private void changeProjectName(String projectName) {
@@ -980,7 +1207,14 @@ public class DashboardController implements Initializable {
         }
 
         if (indexes[0] == -1) {
+            File oldFolder = new File(
+                    "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/ProjectFiles/"
+                            + projectTitleArr.get(indexes[1]) + "/");
             projectTitleArr.set(indexes[1], projectName);
+            File newFolder = new File(
+                    "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/ProjectFiles/"
+                            + projectTitleArr.get(indexes[1]) + "/");
+            oldFolder.renameTo(newFolder);
             int id = projectIdArr.get(indexes[1]);
             App.editProjectTitle(id, projectName);
         } else {
@@ -997,6 +1231,31 @@ public class DashboardController implements Initializable {
             projectTitle.setText(selected.getValue());
         } else {
             projectTitle.setText(selected.getParent().getValue() + " > " + selected.getValue());
+        }
+    }
+
+    @FXML
+    private void openFolder() {
+        TreeItem<String> selected = projectList.getSelectionModel().getSelectedItem();
+        int[] indexes = getSelectedIndex();
+
+        if (selected.getParent() == projectListRoot) {
+            System.out.println("Attempting to Open Folder");
+            try {
+                Desktop.getDesktop().open(new File(
+                        "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/ProjectFiles/"
+                                + projectTitleArr.get(indexes[1])));
+            } catch (IOException err) {
+                err.printStackTrace();
+            }
+        } else {
+            try {
+                Desktop.getDesktop().open(new File(
+                        "C:/Users/Nash/Documents/01_Docs/School/BSIT_2_B/FinalProject(2nd-Year)/ArchiTaskResources/ProjectFiles/"
+                                + projectTitleArr.get(indexes[0])));
+            } catch (IOException err) {
+                err.printStackTrace();
+            }
         }
     }
 
@@ -1486,7 +1745,7 @@ public class DashboardController implements Initializable {
                 deliverTable.getColumns().remove(4);
             }
 
-            ArrayList<ArrayList<String>> taskUnderDeliver = getTasksUnderDeliverable(selectedIndex);
+            ArrayList<ArrayList<String>> taskUnderDeliver = getTasksUnderDeliverable(delIndexParallel);
             String[][] buffer;
             data.clear();
 
@@ -1567,7 +1826,7 @@ public class DashboardController implements Initializable {
         }
     }
 
-    private int getDelIndexInPar(int selectedIndex, int parentIndex) {
+    private static int getDelIndexInPar(int selectedIndex, int parentIndex) {
         int projectId = projectIdArr.get(parentIndex);
 
         int index = 0;

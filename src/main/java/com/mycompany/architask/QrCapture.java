@@ -3,6 +3,7 @@
 // * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
 // */
 package com.mycompany.architask;
+
 //
 ///**
 // *
@@ -37,14 +38,13 @@ public class QrCapture extends JFrame implements Runnable, ThreadFactory {
 
 	private Webcam webcam = null;
 	private WebcamPanel panel = null;
-	private JTextArea textarea = null;
 
 	public QrCapture() {
 		super();
 
 		setLayout(new FlowLayout());
 		setTitle("Read QR / Bar Code With Webcam");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
 		Dimension size = WebcamResolution.QVGA.getSize();
 
@@ -55,12 +55,7 @@ public class QrCapture extends JFrame implements Runnable, ThreadFactory {
 		panel.setPreferredSize(size);
 		panel.setFPSDisplayed(true);
 
-		textarea = new JTextArea();
-		textarea.setEditable(false);
-		textarea.setPreferredSize(size);
-
 		add(panel);
-		add(textarea);
 
 		pack();
 		setVisible(true);
@@ -90,19 +85,27 @@ public class QrCapture extends JFrame implements Runnable, ThreadFactory {
 				LuminanceSource source = new BufferedImageLuminanceSource(image);
 				BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 
-			try {
+				try {
 					result = new MultiFormatReader().decode(bitmap);
 				} catch (NotFoundException e) {
-                                    System.out.println("nope");
-					 //fall thru, it means there is no QR code in image
+					System.out.println("nope");
+					// fall thru, it means there is no QR code in image
 				}
 			}
 
 			if (result != null) {
-				textarea.setText(result.getText());
+				App.sendQr(result.getText());
+				this.dispose();
+				break;
 			}
 
 		} while (true);
+
+		if (webcam != null && webcam.isOpen()) {
+			webcam.close();
+		}
+
+		dispose();
 	}
 
 	@Override

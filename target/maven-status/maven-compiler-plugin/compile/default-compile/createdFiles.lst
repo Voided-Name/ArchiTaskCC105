@@ -1,8 +1,10 @@
-com\mycompany\architask\PrimaryController.class
-com\mycompany\architask\App.class
 com\mycompany\architask\QrCapture.class
-com\mycompany\architask\SecondaryController.class
-module-info.class
-com\mycompany\architask\DashboardController$1.class
 com\mycompany\architask\DashboardController.class
+com\mycompany\architask\PrimaryController.class
+com\mycompany\architask\AdminDashboard.class
+com\mycompany\architask\App.class
+com\mycompany\architask\DashboardController$1.class
 com\mycompany\architask\projectTemplateFX.class
+com\mycompany\architask\DashboardController$2.class
+module-info.class
+com\mycompany\architask\SecondaryController.class

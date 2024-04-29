@@ -66,6 +66,9 @@ public class PrimaryController {
         App.setRoot("login");
     }
 
+    private void folderSetup() {
+    }
+
     private void clearStyles() {
         rFName.setStyle("");
         rLName.setStyle("");
